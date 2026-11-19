@@ -282,25 +282,31 @@ body.dark-mode .mascot-bubble h3 {
 /* Segmented Control / Pill Tabs */
 .segmented-pills {
   display: flex;
+  align-items: center;
   background: var(--pill-bg);
   padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 18px;
+  width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 
 .segmented-pills::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 .pill-btn {
-  flex: 1 1 auto;
-  padding: 8px 10px;
+  flex: 0 0 auto !important;
+  padding: 7px 14px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -453,6 +459,23 @@ body.dark-mode .mascot-bubble h3 {
   font-size: 11px;
   color: var(--text-muted);
   line-height: 1.3;
+}
+
+/* Letters Grid */
+.letters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .letters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
 }
 
 /* Sentence Card (Master Detail) */
@@ -955,6 +978,26 @@ body.dark-mode .nav-item.active {
   transform: scale(0.92);
   background: var(--brand-blue);
   color: #ffffff;
+}
+
+/* Mobile Viewport Overflow Immunity (iPhone / Safari) */
+html, body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+}
+
+.app-container, #main-content {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+select, input, textarea {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 

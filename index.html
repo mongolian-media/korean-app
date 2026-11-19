@@ -11,12 +11,14 @@
   <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
   <title>MONGOLIAN MEDIA — Солонгос хэлний сургалт</title>
-  <link rel="stylesheet" href="css/glassmorphism.css?v=13">
+  <link rel="stylesheet" href="css/glassmorphism.css?v=15">
 </head>
 <body>
-  <!-- Ambient background glow elements -->
-  <div class="ambient-glow-1"></div>
-  <div class="ambient-glow-2"></div>
+  <!-- Ambient background glow elements (isolated in fixed viewport container) -->
+  <div style="position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden; pointer-events: none; z-index: 0;">
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+  </div>
 
   <!-- Main Container -->
   <div class="app-container">
@@ -96,12 +98,12 @@
   </div>
 
   <!-- Application Logic Scripts -->
-  <script src="js/api.js?v=13"></script>
-  <script src="js/storage_manager.js?v=13"></script>
-  <script src="js/speech_engine.js?v=13"></script>
-  <script src="js/pwa.js?v=13"></script>
-  <script src="js/alphabet_data.js?v=13"></script>
-  <script src="js/curriculum_data.js?v=13"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/api.js?v=15"></script>
+  <script src="js/storage_manager.js?v=15"></script>
+  <script src="js/speech_engine.js?v=15"></script>
+  <script src="js/pwa.js?v=15"></script>
+  <script src="js/alphabet_data.js?v=15"></script>
+  <script src="js/curriculum_data.js?v=15"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 </html>

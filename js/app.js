@@ -156,6 +156,7 @@ window.App = {
       this.renderDaysList(container);
     } else if (viewName.startsWith('day-')) {
       const dId = parseInt(viewName.replace('day-', '')) || 1;
+      this.currentDayId = dId;
       this.renderDayLesson(container, dId);
     } else if (viewName === 'review') {
       this.renderReview(container);
@@ -319,7 +320,7 @@ window.App = {
         </div>
 
         <!-- Alphabet Segmented Tabs -->
-        <div class="segmented-pills" id="alpha-tabs">
+        <div class="segmented-pills" id="alpha-tabs" style="overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; width: 100%; max-width: 100%; box-sizing: border-box;">
           <button class="pill-btn active" onclick="App.switchAlphaTab('vowels')">10 Эгшиг</button>
           <button class="pill-btn" onclick="App.switchAlphaTab('consonants')">14 Гийгүүлэгч</button>
           <button class="pill-btn" onclick="App.switchAlphaTab('compound')">11 Нийлмэл</button>
@@ -367,7 +368,7 @@ window.App = {
       area.innerHTML = `
         <div class="fade-in">
           <div style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px;">${groupTitle} (${list.length})</div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;">
+          <div class="letters-grid">
             ${list.map((item, idx) => `
               <div class="glass-card" style="padding: 16px 12px; text-align: center; cursor: pointer;" onclick="App.inspectLetter('${tabKey}', ${idx})">
                 <div style="font-family: var(--font-korean); font-size: 36px; font-weight: 800; color: var(--brand-blue); margin-bottom: 4px;">${item.char}</div>
@@ -614,6 +615,7 @@ window.App = {
   },
 
   openDay(dayId) {
+    dayId = parseInt(dayId) || 1;
     if (dayId > 1 && !this.hasActiveAccess()) {
       if (!this.userProfile) {
         this.openLoginModal('🔒 Түгжээтэй хичээл', `
@@ -631,9 +633,18 @@ window.App = {
       return;
     }
 
+    this.currentDayId = dayId;
+    this.currentStep = 0;
+    this.currentSentenceIdx = 0;
+
     const state = window.StorageManager.get();
-    state.activeDay = dayId;
+    if (!state.activeDay || dayId > state.activeDay) {
+      state.activeDay = dayId;
+    }
+    state.activeStep = 0;
+    state.activeSentenceIndex = 0;
     window.StorageManager.save(state);
+
     this.navigate(`day-${dayId}`);
   },
 
@@ -665,6 +676,9 @@ window.App = {
   // 4. DAY LESSON DETAIL & 5-STEP WORKFLOW
   // =============================================================
   renderDayLesson(container, dayId) {
+    dayId = parseInt(dayId) || this.currentDayId || 1;
+    this.currentDayId = dayId;
+
     if (dayId > 1 && !this.hasActiveAccess()) {
       this.renderPaywall(container, dayId);
       return;
@@ -690,8 +704,12 @@ window.App = {
       <div class="fade-in">
         <!-- Top Day Header -->
         <div class="glass-card" style="padding: 16px 20px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
             <button class="btn-glass" onclick="App.navigate('lessons-list')">← 30 Өдөр</button>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              ${dayId > 1 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId - 1})">← ${dayId - 1}-р өдөр</button>` : ''}
+              ${dayId < 30 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId + 1})">${dayId + 1}-р өдөр ➔</button>` : ''}
+            </div>
             <span class="sentence-badge">${day.category}</span>
           </div>
           <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 4px;">${day.title}</h2>
@@ -1336,6 +1354,7 @@ window.App = {
   },
 
   completeDayLesson(dayId) {
+    dayId = parseInt(dayId) || this.currentDayId || 1;
     const state = window.StorageManager.get();
     if (!state.completedDays.includes(dayId)) {
       state.completedDays.push(dayId);
@@ -1343,18 +1362,19 @@ window.App = {
     // Schedule Spaced Repetition for day's key sentences
     window.StorageManager.scheduleNextReview(state, `day_${dayId}`, true);
 
-    // Advance active day if not 30
-    if (dayId < 30) {
+    // Only advance activeDay if completing current highest reached day
+    if (dayId >= (state.activeDay || 1) && dayId < 30) {
       state.activeDay = dayId + 1;
-      state.activeStep = 0;
-      state.activeSentenceIndex = 0;
     }
-
+    state.activeStep = 0;
+    state.activeSentenceIndex = 0;
     window.StorageManager.save(state);
 
     const savedQuiz = (state.dayQuizAnswers && state.dayQuizAnswers[dayId]) || {};
     const correctCount = Object.values(savedQuiz).filter(a => a.isCorrect).length;
     const answeredCount = Object.keys(savedQuiz).length;
+
+    const nextDayId = dayId < 30 ? dayId + 1 : null;
 
     this.openModal('🎉 Баяр хүргэе!', `
       <div style="text-align: center; padding: 12px 0;">
@@ -1365,11 +1385,21 @@ window.App = {
             📊 5 даалгаварт сорилын үр дүн: ${correctCount} / 5 зөв (${Math.round((correctCount / 5) * 100)}%)
           </div>
         ` : ''}
-        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 16px;">
-          Та өнөөдрийн 10 үндсэн өгүүлбэрийг бүрэн судалж, сүүдэрлэх дасгал болон сорилоо амжилттай давлаа.
-          Зайтай давталтын системд бүртгэгдсэн тул маргааш богино давтлага хийх болно.
+        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 20px;">
+          Та ${dayId}-р өдрийн 10 үндсэн өгүүлбэрийг бүрэн судалж, сорилоо амжилттай давлаа.
+          Энэ өдрийн хичээл ногоон тэмдэглэгээтэй (✓ Дууссан) боллоо.
         </p>
-        <button class="btn-primary" onclick="App.closeModal(); App.navigate('home');">Нүүр хуудас руу буцах</button>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          ${nextDayId ? `
+            <button class="btn-primary" style="padding: 14px 20px; font-size: 15px; font-weight: 700;" onclick="App.closeModal(); App.openDay(${nextDayId});">
+              ➔ Дараагийн өдөр (${nextDayId}-р өдөр) рүү шилжих
+            </button>
+          ` : ''}
+          <button class="btn-glass" style="padding: 12px 20px;" onclick="App.closeModal(); App.navigate('home');">
+            🏠 Нүүр хуудас руу буцах
+          </button>
+        </div>
       </div>
     `);
   },
@@ -1564,9 +1594,9 @@ window.App = {
 
           <!-- Day Filter Dropdown -->
           ${activeTab !== 'bookmarked' ? `
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 100%; min-width: 0;">
               <label for="vocab-day-select" style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Өдрөөр шүүх:</label>
-              <select id="vocab-day-select" onchange="App.onVocabDayFilter(this.value)" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;">
+              <select id="vocab-day-select" onchange="App.onVocabDayFilter(this.value)" style="flex: 1; min-width: 0; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;">
                 <option value="all" ${dayFilter === 'all' ? 'selected' : ''}>Бүх 30 өдрийн хичээл</option>
                 ${curr.map(d => `<option value="${d.id}" ${dayFilter == d.id ? 'selected' : ''}>${d.id}-р өдөр: ${d.title}</option>`).join('')}
               </select>
