@@ -68,11 +68,18 @@ body.dark-mode {
 }
 
 /* Global Reset */
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -81,10 +88,13 @@ body {
   background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
   padding-bottom: 90px; /* Space for bottom nav */
   transition: background 0.3s ease, color 0.3s ease;
   line-height: 1.5;
   overflow-x: hidden;
+  position: relative;
 }
 
 /* Ambient Floating Glow Spheres for Glass Effect */
@@ -92,43 +102,52 @@ body {
   position: fixed;
   top: -100px;
   right: -80px;
-  width: 380px;
-  height: 380px;
+  width: 320px;
+  height: 320px;
   background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, rgba(37, 99, 235, 0.05) 70%, transparent 100%);
   pointer-events: none;
   z-index: 0;
+  max-width: 100vw;
 }
 
 .ambient-glow-2 {
   position: fixed;
   bottom: 40px;
   left: -120px;
-  width: 440px;
-  height: 440px;
+  width: 320px;
+  height: 320px;
   background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, rgba(239, 68, 68, 0.04) 70%, transparent 100%);
   pointer-events: none;
   z-index: 0;
+  max-width: 100vw;
 }
 
 /* App Wrapper Container */
 .app-container {
   max-width: 680px;
+  width: 100%;
   margin: 0 auto;
-  padding: 16px 16px 32px;
+  padding: 16px 14px 32px;
   position: relative;
   z-index: 1;
+  overflow-x: hidden;
 }
 
 /* Frosted Glass Card Base */
 .glass-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-lg);
-  padding: 20px 22px;
+  padding: 18px 18px;
   margin-bottom: 18px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -263,26 +282,41 @@ body.dark-mode .mascot-bubble h3 {
 /* Segmented Control / Pill Tabs */
 .segmented-pills {
   display: flex;
+  align-items: center;
   background: var(--pill-bg);
   padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.segmented-pills::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .pill-btn {
-  flex: 1;
-  padding: 9px 12px;
+  flex: 0 0 auto !important;
+  padding: 7px 14px;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
+  white-space: nowrap;
 }
 
 .pill-btn.active {
@@ -425,6 +459,23 @@ body.dark-mode .mascot-bubble h3 {
   font-size: 11px;
   color: var(--text-muted);
   line-height: 1.3;
+}
+
+/* Letters Grid */
+.letters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .letters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
 }
 
 /* Sentence Card (Master Detail) */
@@ -927,6 +978,26 @@ body.dark-mode .nav-item.active {
   transform: scale(0.92);
   background: var(--brand-blue);
   color: #ffffff;
+}
+
+/* Mobile Viewport Overflow Immunity (iPhone / Safari) */
+html, body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+}
+
+.app-container, #main-content {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+select, input, textarea {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 

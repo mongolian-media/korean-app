@@ -319,7 +319,7 @@ window.App = {
         </div>
 
         <!-- Alphabet Segmented Tabs -->
-        <div class="segmented-pills" id="alpha-tabs">
+        <div class="segmented-pills" id="alpha-tabs" style="overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; width: 100%; max-width: 100%; box-sizing: border-box;">
           <button class="pill-btn active" onclick="App.switchAlphaTab('vowels')">10 Эгшиг</button>
           <button class="pill-btn" onclick="App.switchAlphaTab('consonants')">14 Гийгүүлэгч</button>
           <button class="pill-btn" onclick="App.switchAlphaTab('compound')">11 Нийлмэл</button>
@@ -367,7 +367,7 @@ window.App = {
       area.innerHTML = `
         <div class="fade-in">
           <div style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px;">${groupTitle} (${list.length})</div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;">
+          <div class="letters-grid">
             ${list.map((item, idx) => `
               <div class="glass-card" style="padding: 16px 12px; text-align: center; cursor: pointer;" onclick="App.inspectLetter('${tabKey}', ${idx})">
                 <div style="font-family: var(--font-korean); font-size: 36px; font-weight: 800; color: var(--brand-blue); margin-bottom: 4px;">${item.char}</div>
@@ -1538,12 +1538,12 @@ window.App = {
           </p>
 
           <!-- Tab Navigation -->
-          <div class="segmented-pills" style="margin-top: 14px; margin-bottom: 12px;">
+          <div class="segmented-pills" style="margin-top: 14px; margin-bottom: 12px; overflow-x: auto;">
             <button class="pill-btn ${activeTab === 'all' ? 'active' : ''}" onclick="App.switchVocabTab('all')">
-              📚 Бүх үгс (${allVocab.length})
+              📚 Үгс (${allVocab.length})
             </button>
             <button class="pill-btn ${activeTab === 'sentences' ? 'active' : ''}" onclick="App.switchVocabTab('sentences')">
-              💬 300 Өгүүлбэр
+              💬 Өгүүлбэр (300)
             </button>
             <button class="pill-btn ${activeTab === 'bookmarked' ? 'active' : ''}" onclick="App.switchVocabTab('bookmarked')">
               ⭐ Хадгалсан (${bookmarked.length})
@@ -1564,9 +1564,9 @@ window.App = {
 
           <!-- Day Filter Dropdown -->
           ${activeTab !== 'bookmarked' ? `
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 100%; min-width: 0;">
               <label for="vocab-day-select" style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Өдрөөр шүүх:</label>
-              <select id="vocab-day-select" onchange="App.onVocabDayFilter(this.value)" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;">
+              <select id="vocab-day-select" onchange="App.onVocabDayFilter(this.value)" style="flex: 1; min-width: 0; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;">
                 <option value="all" ${dayFilter === 'all' ? 'selected' : ''}>Бүх 30 өдрийн хичээл</option>
                 ${curr.map(d => `<option value="${d.id}" ${dayFilter == d.id ? 'selected' : ''}>${d.id}-р өдөр: ${d.title}</option>`).join('')}
               </select>
