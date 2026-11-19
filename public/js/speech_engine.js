@@ -14,9 +14,19 @@ window.SpeechEngine = {
   audioEnginePreference: 'auto', // 'auto', 'stream', 'webspeech'
 
   init() {
+    // 0. Set iOS AudioSession category to 'playback' (plays even in Silent mode on iOS 16.4+)
+    if ('audioSession' in navigator) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch (e) {}
+    }
+
     // 1. Pre-unlock iOS AudioContext / SpeechSynthesis on first user touch/tap
     const unlockAudio = () => {
       try {
+        if ('audioSession' in navigator) {
+          navigator.audioSession.type = 'playback';
+        }
         if ('speechSynthesis' in window && window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
@@ -90,7 +100,7 @@ window.SpeechEngine = {
       return;
     }
 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const pref = options.engine || this.audioEnginePreference;
 
     if (pref === 'stream') {
@@ -99,18 +109,18 @@ window.SpeechEngine = {
       this.speakWebSpeech(text, options);
     } else {
       // 'auto' mode:
-      // On mobile (iOS Safari / Android), HTML5 Audio Stream is 100x more reliable
-      // because iOS frequently lacks ko-KR voice packs or mutes SpeechSynthesis in silent mode.
-      if (isMobile) {
-        this.playAudioStream(text, {
-          ...options,
-          onFallback: () => this.speakWebSpeech(text, options)
-        });
-      } else {
-        // On desktop, try WebSpeech first, fallback to AudioStream
+      // On iOS (iPhone / iPad), WebSpeech must be triggered SYNCHRONOUSLY inside user touch
+      // to avoid WebKit gesture expiration, then fallback to audio stream.
+      if (isIos) {
         this.speakWebSpeech(text, {
           ...options,
           onFallback: () => this.playAudioStream(text, options)
+        });
+      } else {
+        // On Android / Desktop, try Audio Stream first (Google TTS Studio), fallback to WebSpeech
+        this.playAudioStream(text, {
+          ...options,
+          onFallback: () => this.speakWebSpeech(text, options)
         });
       }
     }
@@ -122,17 +132,23 @@ window.SpeechEngine = {
 
   // -------------------------------------------------------------
   // Engine 1: Native Studio Audio Stream (Google TTS)
-  // 100% Reliable on mobile devices (plays even if voice pack is not installed)
+  // Hardened for iOS Safari & Android WebKit
   // -------------------------------------------------------------
   playAudioStream(text, options = {}) {
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
 
-    const audio = new Audio(url);
+    const audio = new Audio();
+    audio.playsInline = true;
+    audio.crossOrigin = 'anonymous';
     this.currentAudio = audio;
 
     const rate = options.rate !== undefined ? options.rate : this.defaultRate;
-    audio.playbackRate = Math.max(0.5, Math.min(rate, 2.0));
+    audio.addEventListener('loadedmetadata', () => {
+      if (rate && rate !== 1.0) {
+        try { audio.playbackRate = Math.max(0.5, Math.min(rate, 2.0)); } catch (e) {}
+      }
+    });
 
     audio.onplay = () => {
       this.isSpeaking = true;
@@ -156,11 +172,11 @@ window.SpeechEngine = {
       }
     };
 
+    audio.src = url;
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
         console.warn('[Audio Play Promise Rejected]', err);
-        // User gesture required or network blocked -> try WebSpeech
         if (options.onFallback) {
           options.onFallback();
         } else {
@@ -172,7 +188,7 @@ window.SpeechEngine = {
 
   // -------------------------------------------------------------
   // Engine 2: Web Speech Synthesis (ko-KR)
-  // Hardened for iOS Safari & Android
+  // Hardened for iOS Safari (GC protection & synchronous dispatch)
   // -------------------------------------------------------------
   speakWebSpeech(text, options = {}) {
     if (!('speechSynthesis' in window)) {
@@ -181,10 +197,14 @@ window.SpeechEngine = {
       return;
     }
 
-    // Resume iOS if paused
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
+    try {
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+        window.speechSynthesis.cancel();
+      }
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch (e) {}
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
@@ -197,6 +217,9 @@ window.SpeechEngine = {
       utterance.voice = voice;
     }
 
+    // iOS WebKit Bug Fix: keep global reference to prevent garbage collection mid-speech
+    window._activeUtterance = utterance;
+
     let started = false;
     utterance.onstart = () => {
       started = true;
@@ -206,11 +229,13 @@ window.SpeechEngine = {
 
     utterance.onend = () => {
       this.isSpeaking = false;
+      window._activeUtterance = null;
       if (options.onEnd) options.onEnd();
     };
 
     utterance.onerror = (err) => {
       this.isSpeaking = false;
+      window._activeUtterance = null;
       console.warn('[WebSpeech Error]', err);
       if (!started && options.onFallback) {
         options.onFallback();
@@ -219,15 +244,13 @@ window.SpeechEngine = {
       }
     };
 
-    // Micro-delay on iOS to prevent cancel race conditions
-    setTimeout(() => {
-      try {
-        window.speechSynthesis.speak(utterance);
-      } catch (e) {
-        console.warn('[SpeechSynthesis Exception]', e);
-        if (options.onFallback) options.onFallback();
-      }
-    }, 20);
+    // Synchronous execution inside user gesture handler for iOS Safari
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('[SpeechSynthesis Exception]', e);
+      if (options.onFallback) options.onFallback();
+    }
   },
 
   // -------------------------------------------------------------
