@@ -19,7 +19,8 @@ const SHELL_ASSETS = [
   './assets/mascot.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  './assets/icon.svg'
+  './assets/apple-touch-icon.png',
+  './assets/app_icon.jpg'
 ];
 
 self.addEventListener('install', (e) => {
