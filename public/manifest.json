@@ -1,0 +1,33 @@
+{
+  "name": "MONGOLIAN MEDIA — Солонгос хэлний сургалт",
+  "short_name": "Солонгос Яриа",
+  "description": "Монгол хүнд зориулсан Солонгос хэлний 30 өдрийн яриа, үсгийн бэлтгэл, сүүдэрлэх дасгалжуулагч апп",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090d16",
+  "theme_color": "#0284c7",
+  "lang": "mn",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

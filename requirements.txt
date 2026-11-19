@@ -1,0 +1,2 @@
+# MONGOLIAN MEDIA Korean Language App
+# Zero external pip packages required - runs on Python 3 Standard Library!

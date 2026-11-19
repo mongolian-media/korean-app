@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Гар утаснаас холбогдох — MONGOLIAN MEDIA</title>
+  <link rel="stylesheet" href="css/glassmorphism.css">
+  <style>
+    .connect-container {
+      max-width: 580px;
+      margin: 20px auto 40px;
+      padding: 16px;
+    }
+    .qr-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: var(--glass-shadow-lg);
+    }
+    .qr-box {
+      background: #ffffff;
+      padding: 18px;
+      border-radius: 20px;
+      display: inline-block;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+      margin: 16px 0 20px;
+      border: 3px solid #e2e8f0;
+    }
+    .qr-box img {
+      width: 250px;
+      height: 250px;
+      display: block;
+      image-rendering: pixelated;
+    }
+    .url-box {
+      background: rgba(37, 99, 235, 0.08);
+      border: 2px dashed rgba(37, 99, 235, 0.4);
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .url-text {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--brand-blue);
+      letter-spacing: 0.5px;
+      word-break: break-all;
+      user-select: all;
+    }
+    .copy-btn {
+      background: var(--brand-blue);
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      transition: transform 0.15s ease;
+    }
+    .copy-btn:active {
+      transform: scale(0.96);
+    }
+    .steps-section {
+      text-align: left;
+      margin-top: 24px;
+    }
+    .steps-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .step-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--brand-blue);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-item {
+      font-size: 13px;
+      color: var(--text-main);
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+    .notice-box {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 4px solid var(--brand-orange);
+      padding: 12px 16px;
+      border-radius: 4px var(--radius-sm) var(--radius-sm) 4px;
+      margin: 16px 0;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-main);
+    }
+    .qr-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="connect-container">
+    <div class="qr-card">
+      <img src="assets/logo.jpg" alt="Logo" style="width: 58px; height: 58px; border-radius: 14px; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);">
+      <h1 style="font-size: 21px; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">MONGOLIAN MEDIA</h1>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Солонгос хэл — өдөр тутам ба ажил</p>
+
+      <!-- QR Code Box -->
+      <div class="qr-box">
+        <img id="qr-img" src="" alt="Сургалтын апп QR код">
+      </div>
+      <div>
+        <button id="toggle-qr" class="qr-toggle-btn" onclick="toggleQrSource()">QR төрөл солих (Нөөц / Онлайн)</button>
+      </div>
+
+      <!-- Direct Link Box -->
+      <div class="url-box" style="margin-top: 16px;">
+        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">УТАСНЫ ХӨТӨЧ ДЭЭР БИЧИХ ШУУД ХОЛБООС:</span>
+        <div class="url-text" id="current-url">http://172.20.10.5:8080/</div>
+        <button class="copy-btn" onclick="copyUrl()">
+          <span>📋</span>
+          <span>Холбоосыг хуулах</span>
+        </button>
+      </div>
+
+      <div class="notice-box">
+        <b>💡 Камераар скан хийгдэхгүй бол дараах 2 аргын нэгийг сонгоно уу:</b><br>
+        1. <b>Хамгийн найдвартай арга:</b> Утасныхаа <b>Safari</b> эсвэл <b>Chrome</b> хөтчийг нээгээд дээрх цэнхэр хаягийг (жишээ нь: <code>172.20.10.5:8080</code>) шууд бичээд орно.<br>
+        2. <b>Нэг Wi-Fi эсвэл Hotspot:</b> Утас болон компьютер хоёр заавал нэг Wi-Fi сүлжээнд (эсвэл утасныхаа Personal Hotspot-д) холбогдсон байх шаардлагатай.
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+        <a id="btn-open-direct" href="/" class="btn-resume" style="text-decoration: none;">
+          <span>💻 Энэ компьютер дээр нээх</span>
+        </a>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps-section">
+        <div class="steps-card">
+          <div class="step-title">🍏 iPhone / iPad (Safari) дээр суулгах:</div>
+          <div class="step-item"><b>1.</b> Safari хөтөч дээрээ <b><span class="url-inline">172.20.10.5:8080</span></b> гэж бичиж орно (эсвэл камераар QR уншуулна).</div>
+          <div class="step-item"><b>2.</b> Safari-ийн доод голд байх <b>Хуваалцах (Share ⎋)</b> товчийг дарна.</div>
+          <div class="step-item"><b>3.</b> Цэснээс доош гүйлгээд <b>"Нүүр дэлгэц дээр нэмэх" (Add to Home Screen ➕)</b> дарж нэмнэ. Ингэснээр таны утасны дэлгэц дээр жинхэнэ бие даасан апп суух болно!</div>
+        </div>
+
+        <div class="steps-card">
+          <div class="step-title">🤖 Android (Chrome) дээр суулгах:</div>
+          <div class="step-item"><b>1.</b> Chrome хөтчөө нээгээд <b><span class="url-inline">172.20.10.5:8080</span></b> хаягаар орно.</div>
+          <div class="step-item"><b>2.</b> Дэлгэцийн доор гарах <b>"Апп суулгах" (Install)</b> товч эсвэл баруун дээд <b>3 цэг (⋮)</b> цэсийг дарна.</div>
+          <div class="step-item"><b>3.</b> <b>"Апп суулгах"</b> эсвэл <b>"Нүүр дэлгэцэнд нэмэх"</b>-ийг сонгож баталгаажуулна.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Detect host & IP
+    const urlParams = new URLSearchParams(window.location.search);
+    const lanIp = urlParams.get('ip') || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? window.location.host : '172.20.10.5:8080');
+    const targetUrl = 'http://' + lanIp + '/';
+
+    document.getElementById('current-url').textContent = targetUrl;
+    document.querySelectorAll('.url-inline').forEach(el => el.textContent = lanIp);
+    document.getElementById('btn-open-direct').href = targetUrl;
+
+    // QR Code source handling
+    const qrImg = document.getElementById('qr-img');
+    let useOnlineQr = true;
+
+    function updateQr() {
+      if (useOnlineQr) {
+        // High-precision online standard QR code image
+        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=10&data=' + encodeURIComponent(targetUrl);
+      } else {
+        // Standard ISO compliant local SVG QR code
+        qrImg.src = 'assets/qr_code.svg?v=' + Date.now();
+      }
+    }
+
+    qrImg.onerror = function() {
+      console.warn('Online QR server unreachable, switching to local SVG');
+      useOnlineQr = false;
+      updateQr();
+    };
+
+    updateQr();
+
+    function toggleQrSource() {
+      useOnlineQr = !useOnlineQr;
+      updateQr();
+      const btn = document.getElementById('toggle-qr');
+      btn.textContent = useOnlineQr ? 'Одоо: Онлайн HD QR (Солих бол дар)' : 'Одоо: Дотоод SVG QR (Солих бол дар)';
+    }
+
+    function copyUrl() {
+      navigator.clipboard.writeText(targetUrl).then(() => {
+        alert('Холбоос хуулагдлаа! Утасныхаа хөтөч дээр нааж орно уу:\n' + targetUrl);
+      }).catch(() => {
+        prompt('Холбоосыг хуулж авна уу:', targetUrl);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "app_name": "MONGOLIAN MEDIA",
+    "app_title": "Солонгос хэл — өдөр тутам ба ажил",
+    "owner_name": "Н.Батцогт",
+    "owner_email": "admin@mongolianmedia.mn",
+    "admin_password": "admin"
+  },
+  "payment": {
+    "bank_name": "Хаан Банк (Khan Bank)",
+    "account_number": "5946179010",
+    "account_holder": "Н.Батцогт",
+    "amount_mnt": 49000,
+    "currency": "MNT",
+    "instructions": "Гүйлгээний утга дээр бүртгүүлсэн ИМЭЙЛ ХАЯГ-аа заавал бичнэ үү."
+  },
+  "smtp": {
+    "enabled": true,
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "user": "nbattsogt@gmail.com",
+    "password": "rivoqmrazdworltr",
+    "from_email": "MONGOLIAN MEDIA <nbattsogt@gmail.com>"
+  },
+  "security": {
+    "otp_expiry_minutes": 30,
+    "invite_expiry_hours": 24,
+    "max_devices_per_user": 1,
+    "session_expiry_days": 30
+  }
+}
