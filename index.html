@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MONGOLIAN MEDIA">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <title>MONGOLIAN MEDIA — Солонгос хэлний сургалт</title>
+  <link rel="stylesheet" href="css/glassmorphism.css?v=13">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- PWA Installation Banner -->
+    <div id="pwa-install-bar">
+      <div class="banner-left">
+        <span style="font-size: 20px;">📲</span>
+        <span>Аппыг гар утсан дээрээ суулгах уу?</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="btn-pwa-install" class="banner-btn" style="display: none;">Суулгах</button>
+        <button id="btn-ios-install" class="banner-btn" style="display: none;" onclick="PWA.showInstallModal()">Заавар</button>
+        <button class="banner-close" onclick="PWA.dismissBanner()">&times;</button>
+      </div>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-brand" onclick="App.navigate('home')">
+        <img src="assets/logo.jpg" alt="MONGOLIAN MEDIA Logo" class="header-logo">
+        <div class="brand-titles">
+          <h1>MONGOLIAN MEDIA</h1>
+          <span class="tagline">Солонгос хэл — өдөр тутам ба ажил</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle-btn" class="icon-btn" title="Өнгөний горим солих">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button class="icon-btn" onclick="App.navigate('profile')" title="Хувийн тохиргоо">
+          <span>👤</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dynamic Content Area -->
+    <main id="main-content">
+      <!-- Injected via app.js -->
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <button class="nav-item active" data-view="home">
+      <span class="nav-icon">🏠</span>
+      <span>Нүүр</span>
+    </button>
+    <button class="nav-item" data-view="alphabet">
+      <span class="nav-icon">🔤</span>
+      <span>Үсэг</span>
+    </button>
+    <button class="nav-item" data-view="lessons-list">
+      <span class="nav-icon">📚</span>
+      <span>Хичээл</span>
+    </button>
+    <button class="nav-item" data-view="review">
+      <span class="nav-icon">🔄</span>
+      <span>Давтлага</span>
+    </button>
+    <button class="nav-item" data-view="vocab">
+      <span class="nav-icon">⭐</span>
+      <span>Үгс</span>
+    </button>
+    <button class="nav-item" data-view="profile">
+      <span class="nav-icon">👤</span>
+      <span>Профайл</span>
+    </button>
+  </nav>
+
+  <!-- Global Modal Overlay -->
+  <div id="app-modal-overlay" class="modal-overlay" onclick="if(event.target===this) App.closeModal()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="App.closeModal()">&times;</button>
+      <h3 id="modal-title-text" style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--text-main);">Гарчиг</h3>
+      <div id="modal-body-area"></div>
+    </div>
+  </div>
+
+  <!-- Application Logic Scripts -->
+  <script src="js/api.js?v=13"></script>
+  <script src="js/storage_manager.js?v=13"></script>
+  <script src="js/speech_engine.js?v=13"></script>
+  <script src="js/pwa.js?v=13"></script>
+  <script src="js/alphabet_data.js?v=13"></script>
+  <script src="js/curriculum_data.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
+</body>
+</html>
