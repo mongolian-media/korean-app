@@ -364,7 +364,30 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-ID')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD')
+        self.end_headers()
+
+    def do_HEAD(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        clean_path = path.lstrip('/')
+        base_name = os.path.basename(clean_path)
+        target_path = os.path.join(PUBLIC_DIR, clean_path)
+        if not os.path.exists(target_path):
+            target_path = os.path.join(PUBLIC_DIR, 'assets', base_name)
+        if not os.path.exists(target_path):
+            target_path = os.path.join(PUBLIC_DIR, base_name)
+        if os.path.exists(target_path) and os.path.isfile(target_path):
+            ctype = 'image/png' if target_path.endswith('.png') else 'text/html; charset=utf-8'
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(os.path.getsize(target_path)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
     def do_GET(self):
@@ -380,18 +403,19 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         icon_names = [
             'apple-touch-icon.png', 'apple-touch-icon-precomposed.png',
             'favicon.ico', 'favicon.png', 'icon-192.png', 'icon-512.png',
-            'app-icon.png', 'app-icon-192.png', 'app-icon-512.png'
+            'app-icon.png', 'app-icon-192.png', 'app-icon-512.png',
+            'mascot-icon-v1.png'
         ]
         clean_path = path.lstrip('/')
         base_name = os.path.basename(clean_path)
-        if base_name in icon_names:
+        if base_name in icon_names or base_name.endswith('.png') or base_name.endswith('.ico'):
             # Check public root or public/assets
             target_path = os.path.join(PUBLIC_DIR, clean_path)
             if not os.path.exists(target_path):
                 target_path = os.path.join(PUBLIC_DIR, 'assets', base_name)
             if not os.path.exists(target_path):
                 target_path = os.path.join(PUBLIC_DIR, base_name)
-            if os.path.exists(target_path):
+            if os.path.exists(target_path) and os.path.isfile(target_path):
                 ctype = 'image/png' if target_path.endswith('.png') else 'image/x-icon'
                 try:
                     with open(target_path, 'rb') as img_f:
@@ -399,7 +423,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', ctype)
                     self.send_header('Content-Length', str(len(img_bytes)))
-                    self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Cache-Control', 'public, max-age=86400')
                     self.end_headers()
                     self.wfile.write(img_bytes)
                     return
