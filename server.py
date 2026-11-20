@@ -445,7 +445,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
-                self.send_header('ETag', '"v61-manifest"')
+                self.send_header('ETag', '"v62-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
@@ -461,7 +461,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
                 self.send_header('Cache-Control', 'no-cache, must-revalidate')
-                self.send_header('ETag', '"v61-html"')
+                self.send_header('ETag', '"v62-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
@@ -469,6 +469,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
         # 1.5 Handle root & asset icon requests directly with proper MIME types
         icon_names = [
+            'apple-touch-icon-180x180-v62.png',
             'apple-touch-icon.png', 'apple-touch-icon-precomposed.png',
             'favicon.ico', 'favicon.png', 'icon-192.png', 'icon-512.png',
             'app-icon.png', 'app-icon-192.png', 'app-icon-512.png',
@@ -590,9 +591,31 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     audio_bytes = resp.read()
 
+                total_len = len(audio_bytes)
+                range_header = self.headers.get('Range')
+                if range_header and range_header.startswith('bytes='):
+                    try:
+                        ranges = range_header.replace('bytes=', '').split('-')
+                        start = int(ranges[0]) if ranges[0] else 0
+                        end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else total_len - 1
+                        if start < total_len and end < total_len and start <= end:
+                            chunk = audio_bytes[start:end+1]
+                            self.send_response(206)
+                            self.send_header('Content-Type', 'audio/mpeg')
+                            self.send_header('Content-Range', f'bytes {start}-{end}/{total_len}')
+                            self.send_header('Content-Length', str(len(chunk)))
+                            self.send_header('Accept-Ranges', 'bytes')
+                            self.send_header('Cache-Control', 'public, max-age=604800, immutable')
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.end_headers()
+                            self.wfile.write(chunk)
+                            return
+                    except Exception as re_err:
+                        pass
+
                 self.send_response(200)
                 self.send_header('Content-Type', 'audio/mpeg')
-                self.send_header('Content-Length', str(len(audio_bytes)))
+                self.send_header('Content-Length', str(total_len))
                 self.send_header('Accept-Ranges', 'bytes')
                 self.send_header('Cache-Control', 'public, max-age=604800, immutable')
                 self.send_header('Access-Control-Allow-Origin', '*')
