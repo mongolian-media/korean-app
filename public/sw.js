@@ -1,5 +1,5 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v53)
-const CACHE_NAME = 'mm-korean-v53';
+// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v54)
+const CACHE_NAME = 'mm-korean-v54';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -14,12 +14,6 @@ const PRECACHE_ASSETS = [
   '/js/pwa.js',
   '/js/app.js',
   '/apple-touch-icon.png',
-  '/apple-touch-icon-180x180.png',
-  '/apple-touch-icon-152x152.png',
-  '/apple-touch-icon-120x120.png',
-  '/app-icon-192.png',
-  '/app-icon-512.png',
-  '/mascot-icon-v1.png',
   '/favicon.ico',
   '/assets/logo.jpg'
 ];
@@ -35,7 +29,7 @@ function getContentType(path) {
   return 'text/html; charset=utf-8';
 }
 
-// CRITICAL FOR IOS SAFARI: Reconstructs a response with clean headers and forced redirected=false
+// CRITICAL FOR IOS SAFARI: Reconstructs response with clean headers and forced redirected=false
 async function cleanResponse(response, defaultType) {
   if (!response) return response;
   try {
@@ -69,13 +63,13 @@ const OFFLINE_HTML_FALLBACK = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// Resilient Parallel Pre-caching
+// Fast Parallel Pre-caching
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      console.log('[SW v52] Installing resilient parallel cache...');
+      console.log('[SW v54] Pre-caching in parallel...');
 
       // 1. First priority: Cache HTML shell
       try {
@@ -96,35 +90,35 @@ self.addEventListener('install', (event) => {
           await cache.put(new URL('/index.html', self.location.origin).href, makeHtml());
         }
       } catch (err) {
-        console.warn('[SW v52] Root HTML fetch failed:', err);
+        console.warn('[SW v54] Root HTML fetch failed:', err);
       }
 
-      // 2. Parallel non-blocking caching of remaining assets
+      // 2. Parallel caching of other critical assets
       const remainingAssets = PRECACHE_ASSETS.filter(u => u !== '/' && u !== '/index.html');
-      const fetchTasks = remainingAssets.map(async (url) => {
-        try {
-          const res = await fetch(url, { cache: 'no-cache' });
-          if (res && res.ok) {
-            const blob = await res.blob();
-            const ctype = res.headers.get('content-type') || getContentType(url);
-            const makeRes = () => new Response(blob, {
-              status: 200,
-              statusText: 'OK',
-              headers: {
-                'Content-Type': ctype,
-                'Cache-Control': 'public, max-age=31536000'
-              }
-            });
-            await cache.put(url, makeRes());
-            await cache.put(new URL(url, self.location.origin).href, makeRes());
+      await Promise.allSettled(
+        remainingAssets.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res && res.ok) {
+              const blob = await res.blob();
+              const ctype = res.headers.get('content-type') || getContentType(url);
+              const makeRes = () => new Response(blob, {
+                status: 200,
+                statusText: 'OK',
+                headers: {
+                  'Content-Type': ctype,
+                  'Cache-Control': 'public, max-age=31536000'
+                }
+              });
+              await cache.put(url, makeRes());
+              await cache.put(new URL(url, self.location.origin).href, makeRes());
+            }
+          } catch (e) {
+            console.warn('[SW v54] Precache fail:', url);
           }
-        } catch (e) {
-          console.warn('[SW v52] Precache failed for:', url);
-        }
-      });
-
-      await Promise.allSettled(fetchTasks);
-      console.log('[SW v52] Pre-caching finished successfully!');
+        })
+      );
+      console.log('[SW v54] All assets pre-cached!');
     })()
   );
 });
@@ -142,13 +136,13 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW v52] Purging old cache:', key);
+            console.log('[SW v54] Purging old cache:', key);
             return caches.delete(key);
           }
         })
       );
       await self.clients.claim();
-      console.log('[SW v52] Claimed clients.');
+      console.log('[SW v54] Claimed clients.');
     })()
   );
 });
@@ -186,8 +180,13 @@ self.addEventListener('fetch', (event) => {
 
           // 2. Check all caches in storage
           if (!cached) {
-            cached = await caches.match('/index.html', { ignoreSearch: true })
-                  || await caches.match('/', { ignoreSearch: true });
+            const allKeys = await caches.keys();
+            for (const k of allKeys) {
+              const c = await caches.open(k);
+              cached = await c.match('/index.html', { ignoreSearch: true })
+                    || await c.match('/', { ignoreSearch: true });
+              if (cached) break;
+            }
           }
 
           if (cached) {
@@ -201,11 +200,7 @@ self.addEventListener('fetch', (event) => {
               const blob = await netRes.blob();
               const makeHtml = () => new Response(blob, {
                 status: 200,
-                statusText: 'OK',
-                headers: {
-                  'Content-Type': 'text/html; charset=utf-8',
-                  'Cache-Control': 'public, max-age=31536000'
-                }
+                headers: { 'Content-Type': 'text/html; charset=utf-8' }
               });
               await cache.put('/', makeHtml());
               await cache.put('/index.html', makeHtml());
@@ -256,11 +251,7 @@ self.addEventListener('fetch', (event) => {
             const ctype = netRes.headers.get('content-type') || getContentType(url.pathname);
             const makeR = () => new Response(blob, {
               status: 200,
-              statusText: 'OK',
-              headers: {
-                'Content-Type': ctype,
-                'Cache-Control': 'public, max-age=31536000'
-              }
+              headers: { 'Content-Type': ctype }
             });
             cache.put(event.request, makeR()).catch(() => {});
             cache.put(url.pathname, makeR()).catch(() => {});
