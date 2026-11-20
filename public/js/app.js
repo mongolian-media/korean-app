@@ -470,19 +470,28 @@ window.App = {
 
           ${qList.map((q, qIdx) => {
             const ans = savedAlpha[qIdx];
+            const qAudio = q.questionKo || q.audio || null;
             return `
               <div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light);">
-                <div style="font-weight: 700; margin-bottom: 8px; font-size: 14px;">${qIdx + 1}. ${q.question}</div>
-                ${q.audio ? `<button class="btn-glass" style="margin-bottom: 10px; padding: 4px 12px; font-size: 12px;" onclick="window.SpeechEngine.speak('${q.audio}')">🔊 Асуултыг сонсох</button>` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px;">
+                  <div style="font-weight: 700; font-size: 14px; flex: 1;">${qIdx + 1}. ${q.question}</div>
+                  ${qAudio ? `<button class="quiz-audio-btn" type="button" title="Асуултын солонгос дуудлага" data-ko="${qAudio.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">🔊</button>` : ''}
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   ${q.options.map((opt, optIdx) => {
+                    const optId = (typeof opt === 'object' && opt.id) ? opt.id : `alpha_q_${qIdx}_opt_${optIdx}`;
+                    const optText = typeof opt === 'object' ? opt.text : opt;
+                    const optKo = typeof opt === 'object' ? opt.ko : (/[가-힣]/.test(optText) ? optText : null);
+                    const isCorrectOpt = q.correctId ? (optId === q.correctId) : (optIdx === q.correct);
+
                     let cardClass = 'quiz-opt-card';
                     let icon = '⚪';
                     if (ans !== undefined) {
-                      if (ans.selected === optIdx) {
+                      const isUserSelected = (ans.selectedId !== undefined ? ans.selectedId === optId : ans.selected === optIdx);
+                      if (isUserSelected) {
                         cardClass += ans.isCorrect ? ' selected-correct' : ' selected-wrong';
                         icon = ans.isCorrect ? '✅' : '❌';
-                      } else if (optIdx === q.correct) {
+                      } else if (isCorrectOpt) {
                         cardClass += ' revealed-correct';
                         icon = '🎯';
                       } else {
@@ -490,14 +499,16 @@ window.App = {
                       }
                     }
                     return `
-                      <div class="${cardClass}" onclick="App.checkAlphabetQuiz(${qIdx}, ${optIdx}, ${q.correct})">
+                      <div class="${cardClass}" id="${optId}" onclick="App.checkAlphabetQuiz(${qIdx}, '${optId}', ${optIdx}, ${q.correct})">
                         <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
                           <span>${icon}</span>
-                          <span style="font-family: var(--font-korean); font-size: 16px; font-weight: 700;">${opt}</span>
+                          <span style="font-family: var(--font-korean); font-size: 16px; font-weight: 700;">${optText}</span>
                         </div>
-                        <button class="quiz-audio-btn" type="button" title="Дуудлага сонсох" data-ko="${opt.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
-                          🔊
-                        </button>
+                        ${optKo ? `
+                          <button class="quiz-audio-btn" type="button" title="Дуудлага сонсох" data-ko="${optKo.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
+                            🔊
+                          </button>
+                        ` : ''}
                       </div>
                     `;
                   }).join('')}
@@ -554,13 +565,22 @@ window.App = {
     this.openModal(`Үсгийн тайлбар: ${item.char}`, modalBody);
   },
 
-  checkAlphabetQuiz(qIdx, selectedOpt, correctOpt) {
+  checkAlphabetQuiz(qIdx, selectedOptId, selectedOptIdx, correctOptIdx) {
+    const data = this.alphabet || window.ALPHABET_DATA || {};
+    const qList = data.quizzes || [];
+    const q = qList[qIdx];
+    const correctId = q && q.correctId ? q.correctId : (q && q.options && q.options[q.correct] && q.options[q.correct].id);
+    const isCorrect = correctId ? (selectedOptId === correctId) : (selectedOptIdx === correctOptIdx);
+
     const state = window.StorageManager.get();
     if (!state.alphabetQuizAnswers) state.alphabetQuizAnswers = {};
     state.alphabetQuizAnswers[qIdx] = {
-      selected: selectedOpt,
-      correct: correctOpt,
-      isCorrect: selectedOpt === correctOpt
+      selectedId: selectedOptId,
+      selected: selectedOptIdx,
+      correctId: correctId,
+      correct: correctOptIdx,
+      isCorrect: isCorrect,
+      answeredAt: new Date().toISOString()
     };
     window.StorageManager.save(state);
     this.switchAlphaTab('quiz');
@@ -1106,8 +1126,7 @@ window.App = {
           <!-- 1-5 Questions List -->
           ${quiz.map((q, qIdx) => {
             const ans = savedQuiz[qIdx];
-            const koMatch = q.question.match(/[가-힣\s\?\!\,\.\~]+/);
-            const questionKorean = koMatch && koMatch[0].trim().length > 1 ? koMatch[0].trim() : null;
+            const qAudio = q.questionKo || null;
 
             return `
               <div class="glass-card" style="margin-bottom: 18px; padding: 16px 16px; border-radius: 16px; border: 1.5px solid ${ans !== undefined ? (ans.isCorrect ? 'rgba(16,185,129,0.45)' : 'rgba(239,68,68,0.45)') : 'var(--glass-border)'};">
@@ -1116,8 +1135,8 @@ window.App = {
                     <span style="display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: var(--brand-blue); color: #fff; font-size: 12px; margin-right: 6px; font-weight: 800;">${qIdx + 1}</span>
                     ${q.question}
                   </div>
-                  ${questionKorean ? `
-                    <button class="quiz-audio-btn" type="button" title="Асуултыг сонсох" data-ko="${questionKorean.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
+                  ${qAudio ? `
+                    <button class="quiz-audio-btn" type="button" title="Асуултын солонгос дуудлага сонсох" data-ko="${qAudio.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
                       🔊
                     </button>
                   ` : ''}
@@ -1126,12 +1145,18 @@ window.App = {
                 <!-- Answer Options -->
                 <div style="display: flex; flex-direction: column; gap: 9px;">
                   ${q.options.map((opt, optIdx) => {
+                    const optId = (typeof opt === 'object' && opt.id) ? opt.id : `dayq_${day.id}_${qIdx}_opt_${optIdx}`;
+                    const optText = typeof opt === 'object' ? opt.text : opt;
+                    const optKo = typeof opt === 'object' ? opt.ko : (/[가-힣]/.test(optText) ? optText : null);
+                    const isCorrectOpt = q.correctId ? (optId === q.correctId) : (optIdx === q.correct);
+
                     let cardClass = 'quiz-opt-card';
                     let radioIcon = '⚪';
                     let tagBadge = '';
 
                     if (ans !== undefined) {
-                      if (ans.selected === optIdx) {
+                      const isUserSelected = (ans.selectedId !== undefined ? ans.selectedId === optId : ans.selected === optIdx);
+                      if (isUserSelected) {
                         if (ans.isCorrect) {
                           cardClass += ' selected-correct';
                           radioIcon = '✅';
@@ -1141,7 +1166,7 @@ window.App = {
                           radioIcon = '❌';
                           tagBadge = '<span style="font-size: 11px; font-weight: 700; color: #b91c1c; margin-left: 6px;">(Таны сонголт)</span>';
                         }
-                      } else if (optIdx === q.correct) {
+                      } else if (isCorrectOpt) {
                         cardClass += ' revealed-correct';
                         radioIcon = '🎯';
                         tagBadge = '<span style="font-size: 11px; font-weight: 700; color: #047857; margin-left: 6px;">(Зөв хариулт нь)</span>';
@@ -1151,17 +1176,19 @@ window.App = {
                     }
 
                     return `
-                      <div class="${cardClass}" id="dayq_${day.id}_${qIdx}_opt_${optIdx}" onclick="App.checkDayQuiz(${day.id}, ${qIdx}, ${optIdx}, ${q.correct})">
+                      <div class="${cardClass}" id="${optId}" onclick="App.checkDayQuiz(${day.id}, ${qIdx}, '${optId}', ${optIdx}, ${q.correct})">
                         <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                           <span style="font-size: 16px; min-width: 22px;">${radioIcon}</span>
                           <div style="flex: 1;">
-                            <span style="font-family: var(--font-korean); font-size: 15px; font-weight: 600;">${opt}</span>
+                            <span style="font-family: var(--font-korean); font-size: 15px; font-weight: 600;">${optText}</span>
                             ${tagBadge}
                           </div>
                         </div>
-                        <button class="quiz-audio-btn" type="button" title="Хариултын солонгос дуудлага сонсох" data-ko="${opt.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
-                          🔊
-                        </button>
+                        ${optKo ? `
+                          <button class="quiz-audio-btn" type="button" title="Хариултын солонгос дуудлага сонсох" data-ko="${optKo.replaceAll('"', '&quot;')}" onclick="event.stopPropagation(); window.SpeechEngine.speak(this.getAttribute('data-ko'))">
+                            🔊
+                          </button>
+                        ` : ''}
                       </div>
                     `;
                   }).join('')}
@@ -1391,15 +1418,23 @@ window.App = {
     if (btn) btn.style.display = 'none';
   },
 
-  checkDayQuiz(dayId, qIdx, selectedOpt, correctOpt) {
+  checkDayQuiz(dayId, qIdx, selectedOptId, selectedOptIdx, correctOptIdx) {
+    const curr = this.curriculum || window.CURRICULUM_DATA || [];
+    const day = curr.find(d => d.id === dayId);
+    const q = (day && day.quiz) ? day.quiz[qIdx] : null;
+    const correctId = q && q.correctId ? q.correctId : (q && q.options && q.options[q.correct] && q.options[q.correct].id);
+    const isCorrect = correctId ? (selectedOptId === correctId) : (selectedOptIdx === correctOptIdx);
+
     const state = window.StorageManager.get();
     if (!state.dayQuizAnswers) state.dayQuizAnswers = {};
     if (!state.dayQuizAnswers[dayId]) state.dayQuizAnswers[dayId] = {};
 
     state.dayQuizAnswers[dayId][qIdx] = {
-      selected: selectedOpt,
-      correct: correctOpt,
-      isCorrect: selectedOpt === correctOpt,
+      selectedId: selectedOptId,
+      selected: selectedOptIdx,
+      correctId: correctId,
+      correct: correctOptIdx,
+      isCorrect: isCorrect,
       answeredAt: new Date().toISOString()
     };
     window.StorageManager.save(state);
