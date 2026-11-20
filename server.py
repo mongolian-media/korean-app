@@ -589,9 +589,10 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             curr_file = os.path.join(PUBLIC_DIR, 'js', 'curriculum_data.js')
             with open(curr_file, 'r', encoding='utf-8') as f:
                 raw_js = f.read()
-            # Extract JSON from window.CURRICULUM_DATA = ...;
-            json_text = raw_js.replace("// MONGOLIAN MEDIA - 30 Өдрийн 300 Үндсэн Өгүүлбэрийн Хөтөлбөр\nwindow.CURRICULUM_DATA = ", "").rstrip(";\n")
-            curriculum = json.loads(json_text)
+            # Robust JSON extraction
+            s_idx = raw_js.find('[')
+            e_idx = raw_js.rfind(']') + 1
+            curriculum = json.loads(raw_js[s_idx:e_idx])
             return self.send_json(200, {"curriculum": curriculum})
 
         # User Progress Sync (GET)
@@ -692,25 +693,22 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         # 0. Primary Frictionless 1-Time Code Login (Name + Code only)
         if path == '/api/auth/code-login':
             name = data.get('name', '').strip() or 'Суралцагч'
-            code = data.get('code', '').strip().upper()
+            raw_code = data.get('code', '').strip().upper()
+            digits_only = re.sub(r'\D', '', raw_code)
+            code = raw_code
             device_id = data.get('device_id', '').strip() or secrets.token_hex(8)
             device_name = data.get('device_name', '').strip() or 'Mobile Device'
 
             if not code:
-                return self.send_json(400, {"error": "missing_code", "message": "Батцогтоос авсан 1 удаагийн нэвтрэх кодоо оруулна уу."})
+                return self.send_json(400, {"error": "missing_code", "message": "Батцогтоос авсан 6 оронтой нэвтрэх кодоо оруулна уу."})
 
             conn = get_db()
             c = conn.cursor()
             now = time.time()
 
-            # Find matching code (case-insensitive)
-            c.execute("SELECT * FROM invites WHERE UPPER(code) = ?", (code,))
+            # Find matching code (supports 6-digit numbers and legacy codes)
+            c.execute("SELECT * FROM invites WHERE UPPER(code) = ? OR code = ? OR code = ?", (code, digits_only, f"MM-{digits_only}"))
             inv = c.fetchone()
-            if not inv:
-                digits_only = ''.join(ch for ch in code if ch.isdigit())
-                if len(digits_only) == 6:
-                    c.execute("SELECT * FROM invites WHERE UPPER(code) = ? OR UPPER(code) = ?", (digits_only, f"MM-{digits_only}"))
-                    inv = c.fetchone()
 
             if not inv:
                 conn.close()
@@ -1216,11 +1214,15 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             elif action == 'create-code':
                 count = int(data.get('count', 1))
                 count = max(1, min(count, 50))
-                custom_code = data.get('custom_code', '').strip().upper()
+                raw_custom = data.get('custom_code', '').strip()
+                custom_code = re.sub(r'\D', '', raw_custom) if raw_custom else ''
                 created = []
 
                 if custom_code:
-                    c.execute("SELECT id FROM invites WHERE UPPER(code) = ?", (custom_code,))
+                    if len(custom_code) != 6:
+                        conn.close()
+                        return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код заавал 6 оронтой тоо байх ёстой (Жишээ: 123456)."})
+                    c.execute("SELECT id FROM invites WHERE code = ?", (custom_code,))
                     if c.fetchone():
                         conn.close()
                         return self.send_json(400, {"error": "duplicate_code", "message": f"'{custom_code}' код аль хэдийн бүртгэгдсэн байна."})
