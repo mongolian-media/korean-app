@@ -20,11 +20,60 @@
   <title>MONGOLIAN MEDIA — Солонгос хэлний сургалт</title>
   <link rel="stylesheet" href="css/glassmorphism.css">
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(function(r) { console.log('[SW Head Reg]', r.scope); })
-        .catch(function(e) { console.warn('[SW Head Reg Err]', e); });
-    }
+    (function() {
+      if (!('serviceWorker' in navigator)) return;
+
+      function showBadge(msg) {
+        var b = document.getElementById('offline-ready-badge');
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'offline-ready-badge';
+          b.style.cssText = 'position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 22px;border-radius:30px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;gap:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;animation:fadeIn 0.4s ease;';
+          b.onclick = function() { b.remove(); };
+          if (document.body) {
+            document.body.appendChild(b);
+          } else {
+            window.addEventListener('DOMContentLoaded', function() { document.body.appendChild(b); });
+          }
+        }
+        b.innerHTML = '<span>🟢</span><span>' + (msg || 'Офлайн горим бэлэн боллоо (Интернэтгүй ажиллана)') + '</span>';
+      }
+
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+        console.log('[SW Head] Registered:', reg.scope);
+        if (reg.active) showBadge();
+        if (reg.installing) {
+          reg.installing.addEventListener('statechange', function(e) {
+            if (e.target.state === 'activated') showBadge();
+          });
+        }
+        if (reg.waiting) {
+          reg.waiting.addEventListener('statechange', function(e) {
+            if (e.target.state === 'activated') showBadge();
+          });
+        }
+      }).catch(function(e) { console.warn('[SW Head Err]', e); });
+
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        showBadge();
+      });
+
+      if ('caches' in window) {
+        var pollCount = 0;
+        var pollTimer = setInterval(function() {
+          pollCount++;
+          caches.keys().then(function(keys) {
+            var found = keys.some(function(k) { return k.indexOf('mm-korean') !== -1; });
+            if (found) {
+              showBadge();
+              clearInterval(pollTimer);
+            } else if (pollCount > 15) {
+              clearInterval(pollTimer);
+            }
+          }).catch(function() { clearInterval(pollTimer); });
+        }, 700);
+      }
+    })();
   </script>
 </head>
 <body>
