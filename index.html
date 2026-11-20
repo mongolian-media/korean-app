@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Солонгос Яриа">
-  <link rel="manifest" href="/manifest.json?v=47">
+  <link rel="manifest" href="/manifest.json?v=48">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
   <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
@@ -22,7 +22,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(function(r) { console.log('[SW Head Reg v47]', r.scope); if(r.update) r.update(); })
+        .then(function(r) { console.log('[SW Head Reg v48]', r.scope); if(r.update) r.update(); })
         .catch(function(e) { console.warn('[SW Head Reg Err]', e); });
     }
   </script>
@@ -112,12 +112,12 @@
   </div>
 
   <!-- Application Logic Scripts -->
-  <script src="js/api.js?v=47"></script>
-  <script src="js/storage_manager.js?v=47"></script>
-  <script src="js/speech_engine.js?v=47"></script>
-  <script src="js/pwa.js?v=47"></script>
-  <script src="js/alphabet_data.js?v=47"></script>
-  <script src="js/curriculum_data.js?v=47"></script>
-  <script src="js/app.js?v=47"></script>
+  <script src="js/api.js?v=48"></script>
+  <script src="js/storage_manager.js?v=48"></script>
+  <script src="js/speech_engine.js?v=48"></script>
+  <script src="js/pwa.js?v=48"></script>
+  <script src="js/alphabet_data.js?v=48"></script>
+  <script src="js/curriculum_data.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
 </body>
 </html>

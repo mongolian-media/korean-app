@@ -1,6 +1,6 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Safari & Android PWA Bulletproof Offline Engine)
-// Cache version: mm-korean-v47
-const CACHE_NAME = 'mm-korean-v47';
+// MONGOLIAN MEDIA — Service Worker (iOS Safari & Android PWA Bulletproof Offline Engine v48)
+// Cache version: mm-korean-v48
+const CACHE_NAME = 'mm-korean-v48';
 
 const EMBEDDED_APP_SHELL_HTML = `<!DOCTYPE html>
 <html lang="mn">
@@ -11,7 +11,7 @@ const EMBEDDED_APP_SHELL_HTML = `<!DOCTYPE html>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Солонгос Яриа">
-  <link rel="manifest" href="/manifest.json?v=47">
+  <link rel="manifest" href="/manifest.json?v=48">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
   <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
@@ -26,7 +26,7 @@ const EMBEDDED_APP_SHELL_HTML = `<!DOCTYPE html>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(function(r) { console.log('[SW Head Reg v47]', r.scope); if(r.update) r.update(); })
+        .then(function(r) { console.log('[SW Head Reg v48]', r.scope); if(r.update) r.update(); })
         .catch(function(e) { console.warn('[SW Head Reg Err]', e); });
     }
   </script>
@@ -82,13 +82,13 @@ const EMBEDDED_APP_SHELL_HTML = `<!DOCTYPE html>
       <div id="modal-body-area"></div>
     </div>
   </div>
-  <script src="js/api.js?v=47"></script>
-  <script src="js/storage_manager.js?v=47"></script>
-  <script src="js/speech_engine.js?v=47"></script>
-  <script src="js/pwa.js?v=47"></script>
-  <script src="js/alphabet_data.js?v=47"></script>
-  <script src="js/curriculum_data.js?v=47"></script>
-  <script src="js/app.js?v=47"></script>
+  <script src="js/api.js?v=48"></script>
+  <script src="js/storage_manager.js?v=48"></script>
+  <script src="js/speech_engine.js?v=48"></script>
+  <script src="js/pwa.js?v=48"></script>
+  <script src="js/alphabet_data.js?v=48"></script>
+  <script src="js/curriculum_data.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
 </body>
 </html>`;
 
@@ -97,17 +97,18 @@ const SHELL_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/css/glassmorphism.css?v=20',
-  '/js/api.js?v=47',
-  '/js/speech_engine.js?v=47',
-  '/js/storage_manager.js?v=47',
-  '/js/alphabet_data.js?v=47',
-  '/js/curriculum_data.js?v=47',
-  '/js/pwa.js?v=47',
-  '/js/app.js?v=47',
+  '/js/api.js?v=48',
+  '/js/speech_engine.js?v=48',
+  '/js/storage_manager.js?v=48',
+  '/js/alphabet_data.js?v=48',
+  '/js/curriculum_data.js?v=48',
+  '/js/pwa.js?v=48',
+  '/js/app.js?v=48',
   '/apple-touch-icon.png',
   '/apple-touch-icon-180x180.png',
   '/app-icon-192.png',
   '/app-icon-512.png',
+  '/mascot-icon-v1.png',
   '/favicon.ico',
   '/assets/logo.jpg'
 ];
@@ -140,7 +141,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      console.log('[SW v47] Installing & pre-caching all shell assets...');
+      console.log('[SW v48] Installing & pre-caching all shell assets...');
       
       // 1. Instantly seed index.html from EMBEDDED_APP_SHELL_HTML
       const embeddedRes1 = new Response(EMBEDDED_APP_SHELL_HTML, {
@@ -195,17 +196,17 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     (async () => {
-      // Enable navigation preload if supported (iOS 15.4+)
+      // CRITICAL FOR IOS SAFARI: Disable navigationPreload to prevent WebKit -1009 connection abort bug!
       if (self.registration.navigationPreload) {
         try {
-          await self.registration.navigationPreload.enable();
+          await self.registration.navigationPreload.disable();
         } catch (err) {}
       }
       const keys = await caches.keys();
       await Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME) {
-            console.log('[SW v47] Purging outdated cache:', k);
+            console.log('[SW v48] Purging outdated cache:', k);
             return caches.delete(k);
           }
         })
@@ -219,7 +220,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Skip API calls completely except if handling offline tts
+  // Skip API calls completely
   if (url.pathname.startsWith('/api/')) {
     return;
   }
@@ -229,8 +230,7 @@ self.addEventListener('fetch', (e) => {
                 e.request.destination === 'document' ||
                 url.pathname === '/' ||
                 url.pathname === '/index.html' ||
-                url.pathname.endsWith('.html') ||
-                (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'));
+                url.pathname.endsWith('.html');
 
   if (isNav) {
     e.respondWith(
@@ -251,7 +251,7 @@ self.addEventListener('fetch', (e) => {
 
             // If online, update cache in background (Stale While Revalidate)
             if (typeof navigator !== 'undefined' && navigator.onLine) {
-              fetch(e.request).then(async (netRes) => {
+              fetch('/index.html').then(async (netRes) => {
                 if (netRes && netRes.status === 200) {
                   const netBlob = await netRes.blob();
                   const fresh1 = makeSafeCacheResponse(netBlob, netRes, 'text/html; charset=utf-8');
@@ -266,17 +266,6 @@ self.addEventListener('fetch', (e) => {
 
           // If not in cache yet (initial load), fetch from network
           try {
-            // Check navigation preload response if available
-            const preloadRes = await e.preloadResponse;
-            if (preloadRes && preloadRes.status === 200) {
-              const pBlob = await preloadRes.blob();
-              const safeP1 = makeSafeCacheResponse(pBlob, preloadRes, 'text/html; charset=utf-8');
-              const safeP2 = makeSafeCacheResponse(pBlob, preloadRes, 'text/html; charset=utf-8');
-              cache.put('/index.html', safeP1).catch(() => {});
-              cache.put('/', safeP2).catch(() => {});
-              return makeSafeCacheResponse(pBlob, preloadRes, 'text/html; charset=utf-8');
-            }
-
             const netRes = await fetch(e.request);
             if (netRes && netRes.status === 200) {
               const nBlob = await netRes.blob();
