@@ -1,6 +1,6 @@
 // MONGOLIAN MEDIA — Service Worker
-// Cache version: mm-korean-v38
-const CACHE_NAME = 'mm-korean-v38';
+// Cache version: mm-korean-v39
+const CACHE_NAME = 'mm-korean-v39';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -27,10 +27,14 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW v30] Pre-caching app shell assets...');
-      return cache.addAll(SHELL_ASSETS).catch((err) => {
-        console.warn('[SW v30] Pre-cache partial fail:', err);
-      });
+      console.log('[SW v39] Resilient pre-caching app shell assets...');
+      return Promise.allSettled(
+        SHELL_ASSETS.map((asset) =>
+          cache.add(asset).catch((err) => {
+            console.warn('[SW v39] Failed to pre-cache individual asset:', asset, err);
+          })
+        )
+      );
     })
   );
 });
@@ -41,7 +45,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME) {
-            console.log('[SW v30] Purging outdated cache:', k);
+            console.log('[SW v39] Purging outdated cache:', k);
             return caches.delete(k);
           }
         })
@@ -53,13 +57,24 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Skip API calls completely
+  // Skip API calls completely (Auth / sync happens when online)
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Network-First for Navigation (HTML) & Manifest to guarantee instant updates
-  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/manifest.json') {
+  // 1. Navigation Requests (HTML / App Shell)
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('.html')) {
+    // If completely offline, return cached shell instantly
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      e.respondWith(
+        caches.match('/index.html', { ignoreSearch: true }).then((cached) => {
+          return cached || caches.match('/', { ignoreSearch: true });
+        })
+      );
+      return;
+    }
+
+    // When online, try network with instant cache fallback
     e.respondWith(
       fetch(e.request).then((res) => {
         if (res.status === 200) {
@@ -68,22 +83,31 @@ self.addEventListener('fetch', (e) => {
         }
         return res;
       }).catch(() => {
-        return caches.match(e.request).then(cached => cached || caches.match('/index.html'));
+        return caches.match(e.request, { ignoreSearch: true }).then((cached) => {
+          return cached || caches.match('/index.html', { ignoreSearch: true }) || caches.match('/', { ignoreSearch: true });
+        });
       })
     );
     return;
   }
 
-  // Cache-First for static assets (icons, css, js)
+  // 2. Static Assets (JS, CSS, Icons, Fonts, Audio, Images)
+  // Cache-First with ignoreSearch so ?v=39 matches cached /js/app.js
   e.respondWith(
-    caches.match(e.request).then((cached) => {
+    caches.match(e.request, { ignoreSearch: true }).then((cached) => {
       if (cached) return cached;
-      return fetch(e.request).then((res) => {
-        if (res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return res;
+      return caches.match(url.pathname, { ignoreSearch: true }).then((pathCached) => {
+        if (pathCached) return pathCached;
+        return fetch(e.request).then((res) => {
+          if (res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return res;
+        }).catch(() => {
+          // If offline and asset is an HTML/JS, try matching pathname
+          return caches.match(url.pathname, { ignoreSearch: true });
+        });
       });
     })
   );
