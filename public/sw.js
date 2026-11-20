@@ -1,6 +1,6 @@
 // MONGOLIAN MEDIA — Service Worker
-// Cache version: mm-korean-v35
-const CACHE_NAME = 'mm-korean-v35';
+// Cache version: mm-korean-v36
+const CACHE_NAME = 'mm-korean-v36';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
