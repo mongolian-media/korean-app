@@ -18,6 +18,7 @@ import sys
 import time
 import datetime
 import urllib.parse
+import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
