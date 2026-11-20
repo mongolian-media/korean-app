@@ -9,6 +9,15 @@ window.PWA = {
     this.detectStandalone();
     this.checkInAppBrowser();
     this.listenSWReady();
+    this.requestStoragePersistence();
+  },
+
+  requestStoragePersistence() {
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().then((persisted) => {
+        console.log('[PWA] Storage persistence granted:', persisted);
+      }).catch(() => {});
+    }
   },
 
   registerSW() {
@@ -16,7 +25,6 @@ window.PWA = {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then((reg) => {
           console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
-          if (reg.update) reg.update();
         })
         .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
     }
