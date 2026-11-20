@@ -252,6 +252,20 @@ def init_db():
 # -------------------------------------------------------------
 # Security & Hash Helpers
 # -------------------------------------------------------------
+ENTITLEMENT_SALT = "mm_sec_entitlement_v64_salt_prod_90d"
+
+def create_entitlement_proof(user_id, email, role, status, expires_at):
+    payload = f"{user_id}:{email}:{role}:{status}:{int(expires_at)}:{ENTITLEMENT_SALT}"
+    sig = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+    return {
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "status": status,
+        "expires_at": int(expires_at),
+        "signature": sig
+    }
+
 def hash_token(token):
     return hashlib.sha256(token.encode('utf-8')).hexdigest()
 
@@ -650,6 +664,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             conn.close()
 
             device_approved = dev_row['is_approved'] if dev_row else 0
+            ent_exp = time.time() + (CONFIG["security"]["session_expiry_days"] * 86400)
+            ent_proof = create_entitlement_proof(user['id'], user['email'], user['role'], user['status'], ent_exp)
             
             return self.send_json(200, {
                 "user": {
@@ -661,7 +677,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     "is_verified": user['is_verified'],
                     "created_at": user['created_at'],
                     "device_approved": device_approved
-                }
+                },
+                "entitlement": ent_proof
             })
 
         # Protected Content: 30-Day Curriculum
@@ -839,6 +856,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 ''', (user_id, token_h, device_id, device_name, now, session_exp))
                 conn.commit()
                 conn.close()
+                ent_proof = create_entitlement_proof(user_id, user_email, 'user', 'active', session_exp)
                 return self.send_json(200, {
                     "success": True,
                     "token": session_token,
@@ -851,6 +869,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                         "is_verified": 1,
                         "device_approved": 1
                     },
+                    "entitlement": ent_proof,
                     "message": f"Тавтай морил, {name}! 90 өдрийн сургалтын эрх амжилттай нээгдлээ."
                 })
 
@@ -877,6 +896,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                         ''', (u['id'], token_h, device_id, device_name, now, session_exp))
                         conn.commit()
                         conn.close()
+                        ent_proof = create_entitlement_proof(u['id'], u['email'], u['role'], u['status'], session_exp)
                         return self.send_json(200, {
                             "success": True,
                             "token": session_token,
@@ -889,6 +909,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                                 "is_verified": 1,
                                 "device_approved": 1
                             },
+                            "entitlement": ent_proof,
                             "message": f"Тавтай морил, {u['name']}! Сургалтын эрх сэргээгдлээ."
                         })
                 conn.close()
@@ -938,6 +959,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             log_audit(user_email, 'CODE_LOGIN_SUCCESS', code, f"Student: {name} | Device: {device_name}")
             add_notification('invite_used', 'Шинэ суралцагч нэвтэрлээ', f"{name} ({code}) кодоор 30 өдрийн хичээлээ нээлээ.", user_id)
 
+            ent_proof = create_entitlement_proof(user_id, user_email, 'user', 'active', session_exp)
             return self.send_json(200, {
                 "success": True,
                 "token": session_token,
@@ -950,6 +972,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     "is_verified": 1,
                     "device_approved": 1
                 },
+                "entitlement": ent_proof,
                 "message": f"Тавтай морил, {name}! 30 өдрийн хичээл амжилттай нээгдлээ."
             })
 
@@ -1079,6 +1102,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
             log_audit(u['email'], 'ADMIN_PASSWORD_LOGIN_SUCCESS', u['email'])
 
+            ent_proof = create_entitlement_proof(u['id'], u['email'], u['role'], u['status'], session_exp)
             return self.send_json(200, {
                 "success": True,
                 "token": session_token,
@@ -1090,7 +1114,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     "status": u['status'],
                     "is_verified": 1,
                     "device_approved": 1
-                }
+                },
+                "entitlement": ent_proof
             })
 
         # 2. Verify OTP Code & Establish Session
