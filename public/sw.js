@@ -1,18 +1,18 @@
 // MONGOLIAN MEDIA — Service Worker (iOS Safari & Android PWA Hardened)
-// Cache version: mm-korean-v43
-const CACHE_NAME = 'mm-korean-v43';
+// Cache version: mm-korean-v44
+const CACHE_NAME = 'mm-korean-v44';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/css/glassmorphism.css?v=20',
-  '/js/api.js?v=43',
-  '/js/speech_engine.js?v=43',
-  '/js/storage_manager.js?v=43',
-  '/js/alphabet_data.js?v=43',
-  '/js/curriculum_data.js?v=43',
-  '/js/pwa.js?v=43',
-  '/js/app.js?v=43',
+  '/js/api.js?v=44',
+  '/js/speech_engine.js?v=44',
+  '/js/storage_manager.js?v=44',
+  '/js/alphabet_data.js?v=44',
+  '/js/curriculum_data.js?v=44',
+  '/js/pwa.js?v=44',
+  '/js/app.js?v=44',
   '/apple-touch-icon.png',
   '/apple-touch-icon-180x180.png',
   '/app-icon-192.png',
