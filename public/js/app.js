@@ -718,13 +718,13 @@ window.App = {
         <div class="glass-card" style="text-align: center; padding: 40px 20px;">
           <div style="font-size: 54px; margin-bottom: 12px;">🔒</div>
           <span class="sentence-badge" style="background: rgba(37, 99, 235, 0.15); color: var(--brand-blue); margin-bottom: 12px; display: inline-block;">
-            30 ӨДРИЙН СУРГАЛТЫН ТҮГЖЭЭ
+            90 ӨДРИЙН СУРГАЛТЫН ТҮГЖЭЭ
           </span>
           <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
             ${dayId}-р өдрийн хичээл түгжээтэй байна
           </h2>
           <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 440px; margin: 0 auto 24px;">
-            Энэхүү сургалтын хөтөлбөрийг үргэлжлүүлэн үзэхийн тулд Батцогтоос авсан <b>1 удаагийн нэвтрэх код</b>-оо оруулан эрхээ нээнэ үү. (1-р өдрийн хичээл болон Хангыл үсэг бүх хүнд үнэгүй нээлттэй).
+            Энэхүү сургалтын хөтөлбөрийг үргэлжлүүлэн үзэхийн тулд Mongolian Media-аас авсан <b>1 удаагийн нэвтрэх код</b>-оо оруулан эрхээ нээнэ үү. (1-р өдрийн хичээл болон Хангыл үсэг бүх хүнд үнэгүй нээлттэй).
           </p>
 
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
@@ -1913,7 +1913,7 @@ window.App = {
           <!-- Quick Code Entry for Guests -->
           <div class="glass-card">
             <h4 style="margin-bottom: 8px;">🔑 1 удаагийн 6 оронтой кодоо идэвхжүүлэх</h4>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Батцогтоос авсан 6 оронтой тоон кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Mongolian Media-аас авсан 6 оронтой тоон кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
             <div style="display: flex; gap: 8px;">
               <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="profile-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 4px; font-size: 18px; text-align: center;">
               <button class="btn-primary" style="width: auto; padding: 10px 18px;" onclick="App.submitProfileCode()">Нэвтрэх</button>
@@ -2048,14 +2048,14 @@ window.App = {
   },
 
   // =============================================================
-  // 8. ADMIN DASHBOARD (For "Батцогт")
+  // 8. ADMIN DASHBOARD (For "Mongolian Media")
   // =============================================================
   async renderAdmin(container) {
     if (!this.userProfile || this.userProfile.role !== 'admin') {
       container.innerHTML = `
         <div class="glass-card fade-in" style="text-align: center; padding: 40px 16px;">
           <h3 style="color: #ef4444;">⛔ Хандах эрхгүй байна</h3>
-          <p style="color: var(--text-muted); margin-top: 8px;">Энэ хэсэгт зөвхөн аппын эзэн (Батцогт) нэвтрэх эрхтэй.</p>
+          <p style="color: var(--text-muted); margin-top: 8px;">Энэ хэсэгт зөвхөн Mongolian Media системийн админ нэвтрэх эрхтэй.</p>
         </div>
       `;
       return;
@@ -2066,7 +2066,7 @@ window.App = {
         <div class="glass-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <button class="btn-glass" onclick="App.navigate('profile')">← Буцах</button>
-            <span class="sentence-badge" style="background: #2563eb; color: #fff;">Админ: Батцогт</span>
+            <span class="sentence-badge" style="background: #2563eb; color: #fff;">Админ: Mongolian Media</span>
           </div>
           <h2 style="font-size: 20px; font-weight: 800;">🛡️ MONGOLIAN MEDIA — Удирдлагын Самбар</h2>
           <p style="font-size: 13px; color: var(--text-muted);">Хэрэглэгчид, төлбөр баталгаажуулалт, урилга үүсгэх төв.</p>
@@ -2339,7 +2339,7 @@ window.App = {
       <div>
         ${customHeaderHtml || ''}
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
-          Та өөрийн нэр болон Батцогтоос авсан <b>1 удаагийн нэвтрэх код</b>-оо оруулан шууд хичээлээ эхлүүлнэ үү.
+          Та өөрийн нэр болон Mongolian Media-аас авсан <b>1 удаагийн нэвтрэх код</b>-оо оруулан шууд хичээлээ эхлүүлнэ үү.
         </p>
 
         <div class="form-group" style="margin-bottom: 12px;">
@@ -2351,7 +2351,7 @@ window.App = {
           <label class="form-label">🔑 1 удаагийн 6 оронтой нэвтрэх код:</label>
           <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
           <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
-            *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Батцогтоос 6 оронтой тоон кодоо авна уу).*
+            *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Mongolian Media-аас 6 оронтой тоон кодоо авна уу).*
           </span>
         </div>
 
@@ -2359,12 +2359,12 @@ window.App = {
 
         <div style="background: rgba(37, 99, 235, 0.06); border: 1px dashed rgba(37, 99, 235, 0.3); border-radius: 10px; padding: 10px 12px; margin-top: 14px; font-size: 12px; text-align: left; line-height: 1.5;">
           💳 <b>Код авах данс:</b> Хаан Банк <b>5946179010</b> (Н.Батцогт)<br>
-          Төлбөр (49,000₮) шилжүүлсний дараа багш танд 1 удаагийн кодоо мессенжер эсвэл утсаар өгнө.
+          Төлбөр (49,000₮) шилжүүлсний дараа Mongolian Media танд 1 удаагийн кодоо мессенжер эсвэл утсаар өгнө.
         </div>
 
         <div style="text-align: center; margin-top: 20px; padding-top: 12px; border-top: 1px dashed var(--border-light);">
           <a href="javascript:void(0)" style="font-size: 11px; color: var(--text-muted); text-decoration: underline;" onclick="App.openAdminPasswordModal()">
-            🔒 Системийн админ нэвтрэх (Батцогт)
+            🔒 Системийн админ нэвтрэх (Mongolian Media)
           </a>
         </div>
       </div>
@@ -2384,7 +2384,7 @@ window.App = {
     }
 
     if (!code) {
-      alert('Батцогтоос авсан 1 удаагийн нэвтрэх кодоо оруулна уу.');
+      alert('Mongolian Media-аас авсан 1 удаагийн нэвтрэх кодоо оруулна уу.');
       if (codeInput) codeInput.focus();
       return;
     }
@@ -2404,7 +2404,7 @@ window.App = {
     this.openModal('👑 Системийн админ нэвтрэлт', `
       <div>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
-          Энэхүү хэсэг нь зөвхөн төслийн эзэмшигч <b>Батцогт</b>-ын нууц үгээр нэвтрэх хэсэг юм.
+          Энэхүү хэсэг нь зөвхөн төслийн эзэмшигч <b>Mongolian Media</b>-ийн нууц үгээр нэвтрэх хэсэг юм.
         </p>
         <div class="form-group">
           <label class="form-label">Админ имэйл:</label>
@@ -2432,7 +2432,7 @@ window.App = {
     if (res.ok) {
       this.closeModal();
       await this.checkAuth();
-      alert('🎉 Тавтай морилно уу, Батцогт админ аа! Админ удирдлагын эрх идэвхжлээ.');
+      alert('🎉 Тавтай морилно уу! Mongolian Media админ эрх идэвхжлээ.');
       this.navigate('admin');
     } else {
       alert(res.data.message || 'Админы нууц үг буруу байна.');
