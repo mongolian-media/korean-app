@@ -154,9 +154,19 @@ window.SpeechEngine = {
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
 
-    const audio = new Audio();
+    if ('audioSession' in navigator) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch (e) {}
+    }
+
+    // Reuse audio element or create clean one without CORS restrictions
+    const audio = this.audioElement || new Audio();
+    this.audioElement = audio;
     audio.playsInline = true;
-    audio.crossOrigin = 'anonymous';
+    audio.referrerPolicy = 'no-referrer';
+    // IMPORTANT: DO NOT set crossOrigin='anonymous' because Google TTS does not send CORS headers, which causes Safari to abort immediately!
+    audio.removeAttribute('crossorigin');
     this.currentAudio = audio;
 
     const rate = options.rate !== undefined ? options.rate : this.defaultRate;
@@ -189,6 +199,7 @@ window.SpeechEngine = {
     };
 
     audio.src = url;
+    audio.load();
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
