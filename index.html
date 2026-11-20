@@ -19,6 +19,13 @@
   <link rel="shortcut icon" href="/apple-touch-icon.png">
   <title>MONGOLIAN MEDIA — Солонгос хэлний сургалт</title>
   <link rel="stylesheet" href="css/glassmorphism.css?v=20">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(function(r) { console.log('[SW Head Reg]', r.scope); if(r.update) r.update(); })
+        .catch(function(e) { console.warn('[SW Head Reg Err]', e); });
+    }
+  </script>
 </head>
 <body>
   <!-- Ambient background glow elements (isolated in fixed viewport container) -->
@@ -105,12 +112,12 @@
   </div>
 
   <!-- Application Logic Scripts -->
-  <script src="js/api.js?v=40"></script>
-  <script src="js/storage_manager.js?v=40"></script>
-  <script src="js/speech_engine.js?v=40"></script>
-  <script src="js/pwa.js?v=40"></script>
-  <script src="js/alphabet_data.js?v=40"></script>
-  <script src="js/curriculum_data.js?v=40"></script>
-  <script src="js/app.js?v=40"></script>
+  <script src="js/api.js?v=41"></script>
+  <script src="js/storage_manager.js?v=41"></script>
+  <script src="js/speech_engine.js?v=41"></script>
+  <script src="js/pwa.js?v=41"></script>
+  <script src="js/alphabet_data.js?v=41"></script>
+  <script src="js/curriculum_data.js?v=41"></script>
+  <script src="js/app.js?v=41"></script>
 </body>
 </html>
