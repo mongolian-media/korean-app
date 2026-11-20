@@ -1,34 +1,37 @@
 // MONGOLIAN MEDIA — Service Worker
-// Caches App Shell, Brand Assets & UI scripts for fast offline shell loading.
-// Protected user content is strictly authorized by the backend server.
-
-const CACHE_NAME = 'mm-korean-v15';
+// Cache version: mm-korean-v34
+const CACHE_NAME = 'mm-korean-v34';
 const SHELL_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './css/glassmorphism.css',
-  './js/api.js',
-  './js/speech_engine.js',
-  './js/storage_manager.js',
-  './js/alphabet_data.js',
-  './js/curriculum_data.js',
-  './js/pwa.js',
-  './js/app.js',
-  './assets/logo.jpg',
-  './assets/mascot.png',
-  './assets/icon-192.png',
-  './assets/icon-512.png',
-  './assets/apple-touch-icon.png',
-  './assets/app_icon.jpg'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-precomposed.png',
+  '/app-icon.png',
+  '/app-icon-192.png',
+  '/app-icon-512.png',
+  '/mascot-icon-v1.png',
+  '/favicon.ico',
+  '/css/glassmorphism.css',
+  '/js/api.js',
+  '/js/speech_engine.js',
+  '/js/storage_manager.js',
+  '/js/alphabet_data.js',
+  '/js/curriculum_data.js',
+  '/js/pwa.js',
+  '/js/app.js',
+  '/assets/logo.jpg'
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching app shell...');
-      return cache.addAll(SHELL_ASSETS);
-    }).then(() => self.skipWaiting())
+      console.log('[SW v30] Pre-caching app shell assets...');
+      return cache.addAll(SHELL_ASSETS).catch((err) => {
+        console.warn('[SW v30] Pre-cache partial fail:', err);
+      });
+    })
   );
 });
 
@@ -38,7 +41,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', k);
+            console.log('[SW v30] Purging outdated cache:', k);
             return caches.delete(k);
           }
         })
@@ -50,25 +53,37 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Never cache API calls in service worker
+  // Skip API calls completely
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
+  // Network-First for Navigation (HTML) & Manifest to guarantee instant updates
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/manifest.json') {
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        if (res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => {
+        return caches.match(e.request).then(cached => cached || caches.match('/index.html'));
+      })
+    );
+    return;
+  }
+
+  // Cache-First for static assets (icons, css, js)
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
       return fetch(e.request).then((res) => {
-        // Cache static files dynamically if valid
-        if (res.status === 200 && res.type === 'basic') {
+        if (res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
           const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
       });
     })
   );
