@@ -66,7 +66,7 @@ window.SpeechEngine = {
       .trim();
   },
 
-  getKoreanVoice() {
+  getKoreanVoice(requireLocal = false) {
     if (!('speechSynthesis' in window)) return null;
     try {
       const voices = window.speechSynthesis.getVoices() || [];
@@ -76,12 +76,19 @@ window.SpeechEngine = {
       );
       if (!koVoices.length) return null;
 
+      if (requireLocal) {
+        // Strictly filter to local on-device installed voices (offline capable)
+        const localVoices = koVoices.filter(v => v.localService === true);
+        if (localVoices.length > 0) {
+          const premium = localVoices.find(v => /premium|enhanced|siri|yuna|sora|natural/i.test(v.name));
+          return premium || localVoices[0];
+        }
+        return null;
+      }
+
       // Prioritize Siri, Enhanced, Premium, Yuna, Sora Korean voices
       const premium = koVoices.find(v => /premium|enhanced|siri|yuna|sora|natural/i.test(v.name));
       if (premium) return premium;
-
-      const networkVoice = koVoices.find(v => !v.localService);
-      if (networkVoice) return networkVoice;
 
       return koVoices[0];
     } catch (e) {
@@ -111,17 +118,34 @@ window.SpeechEngine = {
     this.isSpeaking = false;
   },
 
-  // Master Speak Router - Prioritizes 100% Fluent HD Google Studio TTS
+  // Master Speak Router - Prioritizes 100% Fluent HD Google Studio TTS, resilient on-device & cached offline
   speak(text, options = {}) {
     if (!text || !text.trim()) return;
 
     this.stop();
 
     const cleanText = this.cleanKoreanText(text) || text.trim();
+    const isOffline = (typeof navigator !== 'undefined' && navigator.onLine === false);
 
-    // If completely offline, use local device WebSpeech synthesis immediately
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      this.speakWebSpeech(cleanText, options);
+    // If completely offline:
+    if (isOffline) {
+      // 1. First, check on-device Korean voice (ko-KR, localService === true)
+      const localVoice = this.getKoreanVoice(true);
+      if (localVoice) {
+        this.speakWebSpeech(cleanText, {
+          ...options,
+          voice: localVoice,
+          requireLocal: true,
+          onFallback: () => {
+            // If local voice fails or doesn't start, fallback to previously cached audio stream
+            this.playAudioStream(cleanText, { ...options, isOffline: true });
+          }
+        });
+        return;
+      }
+
+      // 2. If no on-device voice installed, play previously cached audio stream
+      this.playAudioStream(cleanText, { ...options, isOffline: true });
       return;
     }
 
@@ -131,12 +155,10 @@ window.SpeechEngine = {
       return;
     }
 
-    // Default & 'auto': ALWAYS play Google HD Studio Audio Stream first!
-    // It gives 100% natural, human, authentic Seoul Korean pronunciation
+    // Default online: play Studio HD audio stream (automatically cached in Service Worker audio cache)
     this.playAudioStream(cleanText, {
       ...options,
       onFallback: () => {
-        console.log('[Audio Stream fallback to WebSpeech]');
         this.speakWebSpeech(cleanText, options);
       }
     });
@@ -144,6 +166,45 @@ window.SpeechEngine = {
 
   speakSlow(text, options = {}) {
     this.speak(text, { ...options, rate: 0.75 });
+  },
+
+  showOfflineNotice() {
+    let toast = document.getElementById('audio-offline-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'audio-offline-toast';
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 84px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        color: #f8fafc;
+        border: 1px solid rgba(249, 115, 22, 0.45);
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        max-width: 90vw;
+        text-align: center;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span>🔊</span><span>Энэ өгүүлбэрийн дуу хараахан хадгалагдаагүй байна. Интернэттэй үед 1 удаа сонсоход автоматаар хадгалагдана.</span>`;
+    toast.style.opacity = '1';
+    clearTimeout(this._offlineToastTimer);
+    this._offlineToastTimer = setTimeout(() => {
+      if (toast) toast.style.opacity = '0';
+    }, 3200);
   },
 
   showPlayingToast(text) {
@@ -227,21 +288,28 @@ window.SpeechEngine = {
     };
 
     let triedDirect = false;
-    audio.onerror = (err) => {
-      console.warn('[Audio Stream Error, trying fallback]', err);
+    const handleAudioFailure = (err) => {
+      console.warn('[Audio Stream Error]', err);
+      this.isSpeaking = false;
+      this.currentAudio = null;
+
+      if (options.isOffline) {
+        // Completely offline: device voice didn't work and audio isn't cached
+        this.showOfflineNotice();
+        if (options.onFallback) options.onFallback();
+        return;
+      }
+
       if (!triedDirect) {
         triedDirect = true;
         audio.src = directUrl;
         audio.load();
         audio.play().catch(() => {
-          this.isSpeaking = false;
-          this.currentAudio = null;
           this.speakWebSpeech(cleanText, options);
         });
         return;
       }
-      this.isSpeaking = false;
-      this.currentAudio = null;
+
       if (options.onFallback) {
         options.onFallback();
       } else {
@@ -249,26 +317,16 @@ window.SpeechEngine = {
       }
     };
 
+    audio.onerror = (err) => {
+      handleAudioFailure(err);
+    };
+
     audio.src = backendUrl;
     audio.load();
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn('[Audio Play Promise Rejected]', err);
-        if (!triedDirect) {
-          triedDirect = true;
-          audio.src = directUrl;
-          audio.load();
-          audio.play().catch(() => {
-            this.speakWebSpeech(cleanText, options);
-          });
-          return;
-        }
-        if (options.onFallback) {
-          options.onFallback();
-        } else {
-          this.speakWebSpeech(cleanText, options);
-        }
+        handleAudioFailure(err);
       });
     }
   },
@@ -299,14 +357,18 @@ window.SpeechEngine = {
     utterance.rate = Math.max(0.6, Math.min(rate, 1.8));
     utterance.pitch = 1.0;
 
-    let voice = this.getKoreanVoice();
-    if (!voice && 'speechSynthesis' in window) {
+    let voice = options.voice || this.getKoreanVoice(options.requireLocal || false);
+    if (!voice && !options.requireLocal && 'speechSynthesis' in window) {
       const vList = window.speechSynthesis.getVoices() || [];
       const kMatch = vList.find(v => v.lang && v.lang.toLowerCase().includes('ko'));
       if (kMatch) voice = kMatch;
     }
     if (voice) {
       utterance.voice = voice;
+    } else if (options.requireLocal) {
+      // Local voice requested but none found on device
+      if (options.onFallback) options.onFallback();
+      return;
     }
 
     // iOS WebKit Bug Fix: keep global reference to prevent garbage collection mid-speech
