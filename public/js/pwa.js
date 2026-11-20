@@ -21,30 +21,91 @@ window.PWA = {
   },
 
   registerSW() {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((reg) => {
-          console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
-        })
-        .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
-    }
+    if (!('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then((reg) => {
+        console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+
+        if (reg.active) {
+          this.showOfflineReadyBadge();
+        }
+
+        if (reg.installing) {
+          reg.installing.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') {
+              this.showOfflineReadyBadge();
+            }
+          });
+        }
+
+        if (reg.waiting) {
+          reg.waiting.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') {
+              this.showOfflineReadyBadge();
+            }
+          });
+        }
+      })
+      .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
   },
 
   listenSWReady() {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        console.log('[PWA] Service Worker is active and offline cache is ready!');
-        this.showOfflineReadyBadge();
-      }).catch(() => {});
+    // 1. Check if already controlled
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      this.showOfflineReadyBadge();
+    }
 
+    if ('serviceWorker' in navigator) {
+      // 2. Controller change event
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('[PWA] New Service Worker took control!');
+        console.log('[PWA] Controller changed -> active!');
         this.showOfflineReadyBadge();
+      });
+
+      // 3. Direct registration check
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg && reg.active) {
+          this.showOfflineReadyBadge();
+        }
+      }).catch(() => {});
+    }
+
+    // 4. CacheStorage verification polling
+    if ('caches' in window) {
+      const checkCache = async () => {
+        try {
+          const keys = await caches.keys();
+          const hasOurCache = keys.some(k => k.startsWith('mm-korean'));
+          if (hasOurCache) {
+            this.showOfflineReadyBadge();
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      };
+
+      checkCache().then((found) => {
+        if (!found) {
+          setTimeout(checkCache, 1000);
+          setTimeout(checkCache, 2500);
+          setTimeout(checkCache, 5000);
+        }
       });
     }
   },
 
   showOfflineReadyBadge() {
+    // 1. Update header status indicator
+    const headerTitle = document.querySelector('.brand-titles h1');
+    if (headerTitle && !document.getElementById('header-offline-dot')) {
+      const dot = document.createElement('span');
+      dot.id = 'header-offline-dot';
+      dot.style.cssText = 'display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-left: 6px; box-shadow: 0 0 8px #10b981; vertical-align: middle;';
+      dot.title = 'Офлайн горим бэлэн (Интернэтгүй ажиллана)';
+      headerTitle.appendChild(dot);
+    }
+
     if (document.getElementById('offline-ready-badge')) return;
     const badge = document.createElement('div');
     badge.id = 'offline-ready-badge';
@@ -53,28 +114,30 @@ window.PWA = {
       bottom: 74px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(16, 185, 129, 0.95);
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       backdrop-filter: blur(8px);
       color: #ffffff;
-      padding: 8px 16px;
+      padding: 10px 18px;
       border-radius: 30px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
       z-index: 9998;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       animation: fadeIn 0.4s ease;
-      pointer-events: none;
+      cursor: pointer;
     `;
-    badge.innerHTML = `<span>🟢</span><span>Офлайн горим бэлэн (Интернэтгүй ажиллана)</span>`;
+    badge.innerHTML = `<span>🟢</span><span>Офлайн горим бэлэн боллоо (Интернэтгүй ажиллана)</span>`;
+    badge.onclick = () => badge.remove();
     document.body.appendChild(badge);
+
     setTimeout(() => {
-      badge.style.transition = 'opacity 0.6s ease';
+      badge.style.transition = 'opacity 0.8s ease';
       badge.style.opacity = '0';
-      setTimeout(() => badge.remove(), 600);
-    }, 4500);
+      setTimeout(() => badge.remove(), 800);
+    }, 12000);
   },
 
   isInAppBrowser() {
@@ -231,7 +294,10 @@ window.PWA = {
           <h3 style="color: #2563eb; margin-bottom: 12px;">🍏 iPhone / iPad дээр суулгах:</h3>
           <p><b>1-р алхам:</b> Safari хөтчийн доод талын <b>Хуваалцах (Share ⬆️)</b> товчийг дарна.</p>
           <p><b>2-р алхам:</b> Цэснээс доош гүйлгээд <b>"Add to Home Screen" (Дэлгэцэнд нэмэх ➕)</b>-ийг сонгоно.</p>
-          <p><b>3-р алхам:</b> Баруун дээд буланд байх <b>"Add" (Нэмэх)</b> товчийг дарж утасны дэлгэц дээрээ апп болгоно.</p>
+          <p><b>3-р алхам:</b> Баруун дээд буланд байх <b>"Add" (Нэмэх)</b> товчийг дарж дэлгэцэндээ суулгана.</p>
+          <div style="background: rgba(16, 185, 129, 0.15); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-top: 10px; font-size: 13px;">
+            <b>💡 Чухал:</b> Суулгасны дараа дэлгэц дээр гарсан дүрсээ <b>Wi-Fi асаалттай үедээ 1 удаа дарж нээнэ үү</b>. Үүний дараа интернэтгүй үедээ хэзээ ч шууд ашиглах боломжтой болно!
+          </div>
         </div>
       `;
     } else {
