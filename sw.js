@@ -1,10 +1,11 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v58)
-// Built on drive.uugiscar.com production standard: updateViaCache: 'none', atomic addAll, clone()
-const VERSION = 'v58';
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v59)
+// Built specifically to eliminate iOS WebKit / Safari offline redirect errors
+const VERSION = 'v59';
 const SHELL_CACHE = `mm-korean-${VERSION}`;
 
 const SHELL = [
   '/',
+  './',
   '/index.html',
   '/manifest.json',
   '/css/glassmorphism.css',
@@ -20,10 +21,40 @@ const SHELL = [
   '/assets/logo.jpg'
 ];
 
-// 1. Install: Precache all essential files atomically. If any file fails, install fails safely.
+/**
+ * Strips the internal 'redirected' flag by constructing a fresh Response object.
+ * iOS Safari / WebKit strictly blocks service worker responses if redirected === true
+ * during offline navigation, throwing "Safari can't open the page because your iPhone is not connected to the internet".
+ */
+function cleanResponse(response) {
+  if (!response) return response;
+  return new Response(response.body, {
+    status: response.status || 200,
+    statusText: response.statusText || 'OK',
+    headers: response.headers
+  });
+}
+
+// 1. Install: Precache all essential files atomically, cleaning every response
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL))
+    caches.open(SHELL_CACHE).then(async (cache) => {
+      for (const url of SHELL) {
+        try {
+          const res = await fetch(url, { cache: 'no-cache' });
+          if (res && (res.ok || res.type === 'opaque')) {
+            const clean = new Response(res.body, {
+              status: res.status,
+              statusText: res.statusText,
+              headers: res.headers
+            });
+            await cache.put(url, clean);
+          }
+        } catch (e) {
+          console.warn('[SW] Precache item failed:', url, e);
+        }
+      }
+    })
   );
   self.skipWaiting();
 });
@@ -40,27 +71,34 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. NetworkFirst for dynamic & navigation requests; caches valid responses with clone()
+// 3. NetworkFirst for dynamic & navigation requests; always strips redirected flag for Safari
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
     const response = await fetch(request, { cache: 'no-cache' });
     if (response && response.ok) {
-      cache.put(request, response.clone());
+      const clean = new Response(response.clone().body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+      cache.put(request, clean).catch(() => {});
     }
     return response;
   } catch (err) {
     const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
+    if (cached) return cleanResponse(cached);
 
     const url = new URL(request.url);
     const cachedPath = await cache.match(url.pathname, { ignoreSearch: true });
-    if (cachedPath) return cachedPath;
+    if (cachedPath) return cleanResponse(cachedPath);
 
-    // Offline document navigation fallback: return cached root app shell
-    if (request.mode === 'navigate' || request.destination === 'document' || url.pathname === '/' || url.pathname === '/index.html') {
-      const rootCached = await cache.match('/index.html', { ignoreSearch: true }) || await cache.match('/', { ignoreSearch: true });
-      if (rootCached) return rootCached;
+    // Offline document navigation fallback: return clean cached root app shell
+    if (request.mode === 'navigate' || request.destination === 'document' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '') {
+      const rootCached = await cache.match('/index.html', { ignoreSearch: true })
+                      || await cache.match('/', { ignoreSearch: true })
+                      || await cache.match('./', { ignoreSearch: true });
+      if (rootCached) return cleanResponse(rootCached);
     }
     throw err;
   }
@@ -70,16 +108,21 @@ async function networkFirst(request) {
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request, { ignoreSearch: true });
-  if (cached) return cached;
+  if (cached) return cleanResponse(cached);
   try {
     const response = await fetch(request);
     if (response && (response.ok || response.type === 'opaque')) {
-      cache.put(request, response.clone());
+      const clean = new Response(response.clone().body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+      cache.put(request, clean).catch(() => {});
     }
     return response;
   } catch (e) {
     const fallback = await cache.match(request, { ignoreSearch: true });
-    if (fallback) return fallback;
+    if (fallback) return cleanResponse(fallback);
     throw e;
   }
 }
