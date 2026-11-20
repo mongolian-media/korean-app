@@ -1,9 +1,31 @@
-// MONGOLIAN MEDIA — PWA Mobile Installation Controller
+// MONGOLIAN MEDIA — PWA Mobile Installation Controller (v47 Offline Hardened)
+
+function makeSafeCacheResponse(blob, originalRes, defaultContentType) {
+  const safeHeaders = new Headers();
+  if (originalRes && originalRes.headers) {
+    for (const [key, val] of originalRes.headers.entries()) {
+      const lower = key.toLowerCase();
+      // CRITICAL FOR IOS SAFARI: Never allow compression headers in cached responses!
+      if (lower !== 'content-encoding' && lower !== 'content-length' && lower !== 'transfer-encoding') {
+        safeHeaders.set(key, val);
+      }
+    }
+  }
+  if (defaultContentType && !safeHeaders.get('content-type')) {
+    safeHeaders.set('content-type', defaultContentType);
+  }
+  return new Response(blob, {
+    status: (originalRes && originalRes.status) || 200,
+    statusText: (originalRes && originalRes.statusText) || 'OK',
+    headers: safeHeaders
+  });
+}
 
 window.PWA = {
   deferredPrompt: null,
 
   init() {
+    this.requestPersistence();
     this.registerSW();
     this.setupInstallPrompt();
     this.detectStandalone();
@@ -11,23 +33,32 @@ window.PWA = {
     this.ensureOfflineCache();
   },
 
+  async requestPersistence() {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        const isPersisted = await navigator.storage.persist();
+        console.log('[PWA] Storage persisted:', isPersisted);
+      }
+    } catch (e) {}
+  },
+
   async ensureOfflineCache() {
     if (!('caches' in window)) return;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
-    const CACHE_NAME = 'mm-korean-v46';
+    const CACHE_NAME = 'mm-korean-v47';
     const urlsToCache = [
       '/',
       '/index.html',
       '/manifest.json',
       '/css/glassmorphism.css?v=20',
-      '/js/api.js?v=46',
-      '/js/storage_manager.js?v=46',
-      '/js/speech_engine.js?v=46',
-      '/js/pwa.js?v=46',
-      '/js/alphabet_data.js?v=46',
-      '/js/curriculum_data.js?v=46',
-      '/js/app.js?v=46',
+      '/js/api.js?v=47',
+      '/js/storage_manager.js?v=47',
+      '/js/speech_engine.js?v=47',
+      '/js/pwa.js?v=47',
+      '/js/alphabet_data.js?v=47',
+      '/js/curriculum_data.js?v=47',
+      '/js/app.js?v=47',
       '/apple-touch-icon.png',
       '/apple-touch-icon-180x180.png',
       '/app-icon-192.png',
@@ -39,21 +70,24 @@ window.PWA = {
     try {
       const cache = await caches.open(CACHE_NAME);
       
-      // Parallel fetch and cache with clean Response
+      // Parallel fetch and cache with clean decompressed Response
       await Promise.allSettled(
         urlsToCache.map(async (url) => {
           try {
             const res = await fetch(url, { cache: 'no-cache' });
             if (res.ok) {
               const blob = await res.blob();
-              const cleanRes = new Response(blob, {
-                status: res.status,
-                statusText: res.statusText,
-                headers: res.headers
-              });
-              await cache.put(url, cleanRes.clone());
+              let ctype = '';
+              if (url.includes('.js')) ctype = 'application/javascript; charset=utf-8';
+              else if (url.includes('.css')) ctype = 'text/css; charset=utf-8';
+              else if (url.includes('.json')) ctype = 'application/json; charset=utf-8';
+              else if (url.includes('.png')) ctype = 'image/png';
+              else if (url.includes('.jpg')) ctype = 'image/jpeg';
+              
+              const safeRes = makeSafeCacheResponse(blob, res, ctype);
+              await cache.put(url, safeRes.clone());
               const cleanUrl = url.split('?')[0];
-              await cache.put(cleanUrl, cleanRes);
+              await cache.put(cleanUrl, safeRes);
             }
           } catch (e) {}
         })
@@ -64,15 +98,19 @@ window.PWA = {
         const indexRes = await fetch('/index.html', { cache: 'no-cache' });
         if (indexRes.ok) {
           const blob = await indexRes.blob();
-          const clean1 = new Response(blob, { status: 200, headers: indexRes.headers });
-          const clean2 = new Response(blob, { status: 200, headers: indexRes.headers });
+          const clean1 = makeSafeCacheResponse(blob, indexRes, 'text/html; charset=utf-8');
+          const clean2 = makeSafeCacheResponse(blob, indexRes, 'text/html; charset=utf-8');
           await cache.put('/index.html', clean1);
           await cache.put('/', clean2);
         }
       } catch (e) {}
 
-      console.log('[PWA] Foreground offline caching finished 100%!');
-      this.showOfflineReadyBadge();
+      // Verify that cache is intact
+      const testMatch = await cache.match('/index.html');
+      if (testMatch) {
+        console.log('[PWA] Foreground offline caching finished 100%!');
+        this.showOfflineReadyBadge();
+      }
     } catch (err) {
       console.warn('[PWA] ensureOfflineCache error:', err);
     }
