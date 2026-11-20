@@ -719,7 +719,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             device_name = data.get('device_name', '').strip() or 'Mobile Device'
 
             if not code:
-                return self.send_json(400, {"error": "missing_code", "message": "Батцогтоос авсан 6 оронтой нэвтрэх кодоо оруулна уу."})
+                return self.send_json(400, {"error": "missing_code", "message": "Mongolian Media-аас авсан 6 оронтой нэвтрэх кодоо оруулна уу."})
 
             conn = get_db()
             c = conn.cursor()
@@ -772,7 +772,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
             if not inv:
                 conn.close()
-                return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код буруу байна. Батцогтоос авсан кодоо шалгана уу."})
+                return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код буруу байна. Mongolian Media-аас авсан кодоо шалгана уу."})
 
             # If code is already used, check if the same device is re-authenticating
             if inv['is_used'] == 1:
@@ -806,7 +806,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 conn.close()
                 return self.send_json(400, {
                     "error": "code_already_used",
-                    "message": "Энэ кодыг өмнө нь өөр төхөөрөмж дээр ашигласан байна. Нэг код зөвхөн 1 төхөөрөмжид хүчинтэй. Батцогтоос шинэ код авна уу."
+                    "message": "Энэ кодыг өмнө нь өөр төхөөрөмж дээр ашигласан байна. Нэг код зөвхөн 1 төхөөрөмжид хүчинтэй. Mongolian Media-аас шинэ код авна уу."
                 })
 
             # Check expiration if set
@@ -1119,7 +1119,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
             return self.send_json(200, {
                 "success": True,
-                "message": "Таны төлбөрийн мэдээллийг хүлээн авлаа. Эзэн (Батцогт) шалгаад эрхийг тань нээх болно."
+                "message": "Таны төлбөрийн мэдээллийг хүлээн авлаа. Mongolian Media шалгаад эрхийг тань нээх болно."
             })
 
         # 4. Save User Progress
