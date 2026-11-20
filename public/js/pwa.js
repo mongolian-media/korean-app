@@ -1,5 +1,6 @@
 // MONGOLIAN MEDIA — PWA Mobile Installation & Offline Diagnostic Controller
-// Production Standard for iOS WebKit & Android Chrome (Version 56)
+// Production Standard for iOS WebKit & Android Chrome (Version 57)
+// Built on drive.uugiscar.com offline architecture: updateViaCache: 'none', atomic addAll, clone()
 
 window.PWA = {
   deferredPrompt: null,
@@ -29,7 +30,7 @@ window.PWA = {
   },
 
   init() {
-    this.logLifecycle('PWA хянагч эхэллээ (v56)');
+    this.logLifecycle('PWA систем эхэллээ (v57)');
     this.registerSW();
     this.setupInstallPrompt();
     this.detectStandalone();
@@ -47,43 +48,50 @@ window.PWA = {
     }
   },
 
-  // 1. Centralized Service Worker Registration (The ONLY place registering /sw.js)
+  // 1. Centralized Service Worker Registration with updateViaCache: 'none'
   registerSW() {
     if (!('serviceWorker' in navigator)) {
-      this.logLifecycle('Бүртгэл боломжгүй: Энэ хөтөч ServiceWorker дэмжихгүй байна.');
+      this.swError = {
+        name: 'NotSupportedError',
+        message: 'Энэ төхөөрөмж/хөтөч Service Worker дэмжихгүй байна.'
+      };
+      this.logLifecycle(this.swError.message);
       return;
     }
 
-    this.logLifecycle('register("/sw.js", { scope: "/" }) дуудаж байна...');
+    this.logLifecycle("register('/sw.js', { scope: '/', updateViaCache: 'none' }) дуудаж байна...");
 
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((reg) => {
-        this.swRegistration = reg;
-        this.swError = null;
-        this.logLifecycle(`Бүртгэл амжилттай боллоо. Scope: "${reg.scope}"`);
-        this.trackWorkers(reg);
+    navigator.serviceWorker.register('/sw.js', {
+      scope: '/',
+      updateViaCache: 'none'
+    })
+    .then((reg) => {
+      this.swRegistration = reg;
+      this.swError = null;
+      this.logLifecycle(`Бүртгэл амжилттай боллоо. Scope: "${reg.scope}"`);
+      this.trackWorkers(reg);
 
-        // Listen for new worker versions installing
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          this.logLifecycle(`updatefound үйл явдал илэрлээ! Шинэ worker төлөв: ${newWorker ? newWorker.state : 'байхгүй'}`);
-          if (newWorker) {
-            this.attachWorkerListener(newWorker, 'installing');
-          }
-        });
-
-        this.checkAndShowBadge();
-      })
-      .catch((err) => {
-        console.error('[PWA] ServiceWorker registration error:', err);
-        this.swError = {
-          name: err.name || 'RegistrationError',
-          message: err.message || String(err),
-          stack: err.stack || ''
-        };
-        this.logLifecycle(`Бүртгэл АЛДАА өглөө: [${this.swError.name}] ${this.swError.message}`);
-        this.checkAndShowBadge();
+      // Listen for updates / new worker versions
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        this.logLifecycle(`updatefound: шинэ worker илэрлээ (төлөв: ${newWorker ? newWorker.state : 'байхгүй'})`);
+        if (newWorker) {
+          this.attachWorkerListener(newWorker, 'installing');
+        }
       });
+
+      this.checkAndShowBadge();
+    })
+    .catch((err) => {
+      console.error('[PWA] SW register error:', err);
+      this.swError = {
+        name: err.name || 'RegistrationError',
+        message: err.message || String(err),
+        stack: err.stack || ''
+      };
+      this.logLifecycle(`Бүртгэлийн АЛДАА: [${this.swError.name}] ${this.swError.message}`);
+      this.checkAndShowBadge();
+    });
   },
 
   trackWorkers(reg) {
@@ -94,7 +102,7 @@ window.PWA = {
 
   attachWorkerListener(worker, role) {
     if (!worker) return;
-    this.logLifecycle(`[${role}] worker хянагдаж эхэллээ (Одоогийн төлөв: "${worker.state}")`);
+    this.logLifecycle(`[${role}] worker хянагдаж байна (одоогийн төлөв: "${worker.state}")`);
 
     worker.addEventListener('statechange', (e) => {
       const currentState = e.target.state;
@@ -104,8 +112,23 @@ window.PWA = {
         this.logLifecycle(`[${role}] worker амжилттай идэвхжлээ (activated)!`);
         this.checkAndShowBadge();
       } else if (currentState === 'redundant') {
-        this.logLifecycle(`[${role}] worker цуцлагдлаа (redundant)!`);
+        this.logLifecycle(`[${role}] worker цуцлагдлаа (redundant - суулгалт бүтэлгүйтсэн)!`);
+        if (!this.swError) {
+          this.swError = {
+            name: 'WorkerRedundantError',
+            message: 'Worker суулгалт цуцлагдсан (redundant). Сүлжээ тасарсан эсвэл кэшлэх файл алдаатай байж болзошгүй.'
+          };
+        }
       }
+    });
+
+    worker.addEventListener('error', (err) => {
+      this.swError = {
+        name: err.name || 'WorkerError',
+        message: err.message || 'Worker ажиллах явцад алдаа гарлаа.'
+      };
+      this.logLifecycle(`Worker АЛДАА: [${this.swError.name}] ${this.swError.message}`);
+      this.checkAndShowBadge();
     });
   },
 
@@ -113,7 +136,7 @@ window.PWA = {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         const ctrl = navigator.serviceWorker.controller;
-        this.logLifecycle(`controllerchange үйл явдал дуудагдлаа! Шинэ хянагч: ${ctrl ? ctrl.scriptURL : 'байхгүй'}`);
+        this.logLifecycle(`controllerchange үйл явдал: Хянагч шинэчлэгдлээ (${ctrl ? ctrl.scriptURL : 'байхгүй'})`);
         this.checkAndShowBadge();
       });
 
@@ -133,7 +156,7 @@ window.PWA = {
     }, 1500);
   },
 
-  // 2. Comprehensive Offline Readiness Verification
+  // 2. Comprehensive Offline Readiness Verification (Controller + 10/10 Files)
   async verifyOfflineReadiness() {
     const result = {
       swSupported: 'serviceWorker' in navigator,
@@ -160,7 +183,7 @@ window.PWA = {
 
     if (!result.swSupported || !result.cachesSupported) {
       result.statusKey = 'UNSUPPORTED';
-      result.statusLabel = 'Хөтөч PWA дэмжихгүй байна';
+      result.statusLabel = 'Хөтөч ServiceWorker дэмжихгүй байна';
       return result;
     }
 
@@ -242,16 +265,15 @@ window.PWA = {
     }
 
     // D. Compute Status Key and Offline Readiness
-    const hasConnection = (result.hasController || result.hasActive);
-
-    if (result.allCached && hasConnection) {
+    // "Офлайн бэлэн" төлөвт бүх 10/10 файл болон хуудсыг хянаж буй controller-ийг хамтад нь шалгана
+    if (result.allCached && result.hasController) {
       result.isOfflineReady = true;
       result.statusKey = 'READY';
-      result.statusLabel = '🟢 Офлайн горим 100% бэлэн (Бүх файл суусан, холболт идэвхтэй)';
-    } else if (result.allCached && !hasConnection) {
+      result.statusLabel = '🟢 Офлайн горим 100% бэлэн (Бүх 10 файл суусан, Controller хянаж байна)';
+    } else if (result.allCached && !result.hasController) {
       result.isOfflineReady = false;
       result.statusKey = 'SW_INACTIVE';
-      result.statusLabel = '🟡 Service worker идэвхгүй байна (Бүх 10 файл суусан боловч хөтөч хараахан холбогдоогүй)';
+      result.statusLabel = '🟡 Service worker идэвхгүй (10/10 файл суусан боловч хөтөч хараахан холбогдоогүй)';
     } else if (result.cachedCount > 0) {
       result.isOfflineReady = false;
       result.statusKey = 'FILES_MISSING';
@@ -305,7 +327,7 @@ window.PWA = {
     } else {
       dot.style.background = '#f59e0b';
       dot.style.boxShadow = '0 0 8px #f59e0b';
-      dot.title = 'Офлайн бэлтгэл дутуу — Дарж оношилгоог харах';
+      dot.title = 'Офлайн холболт шаардлагатай — Дарж оношилгоог харах';
     }
   },
 
@@ -349,7 +371,7 @@ window.PWA = {
     }, 12000);
   },
 
-  // 3. Detailed Diagnostic Modal (Requirements 1, 2, 3)
+  // 3. Detailed Diagnostic Modal (Full Error Inspector, Workers Breakdown & Lifecycle)
   async openDiagnosticModal() {
     const diag = await this.verifyOfflineReadiness();
 
@@ -360,7 +382,7 @@ window.PWA = {
         <div style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; padding: 12px; border-radius: 10px; margin-bottom: 14px; text-align: center;">
           <span style="font-size: 24px;">🟢</span>
           <div style="font-weight: 800; color: #34d399; margin-top: 4px; font-size: 15px;">Офлайн горим 100% Бэлэн</div>
-          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Бүх 10 файл суусан, Service Worker хянаж байна. Интернэтгүй үед апп саадгүй ажиллана.</div>
+          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Бүх 10 файл суусан, Controller хуудсыг хянаж байна. Аппыг бүрэн хааж интернэтгүй нээхэд шууд ажиллана.</div>
         </div>
       `;
     } else if (diag.statusKey === 'SW_INACTIVE') {
@@ -368,7 +390,7 @@ window.PWA = {
         <div style="background: rgba(245,158,11,0.15); border: 1px solid #f59e0b; padding: 12px; border-radius: 10px; margin-bottom: 14px; text-align: center;">
           <span style="font-size: 24px;">🟡</span>
           <div style="font-weight: 800; color: #fbbf24; margin-top: 4px; font-size: 15px;">Service Worker идэвхгүй байна</div>
-          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Бүх 10 файл суусан боловч хөтөч Service Worker-ийг хараахан холбогдоогүй байна. Доорх <b>"Идэвхжүүлэх"</b> товчийг дарна уу.</div>
+          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Бүх 10 файл кэшэд суусан боловч Controller хараахан холбогдоогүй байна. Доорх <b>"Идэвхжүүлэх (Claim & Reload)"</b> товчийг дарна уу.</div>
         </div>
       `;
     } else if (diag.statusKey === 'FILES_MISSING') {
@@ -376,7 +398,7 @@ window.PWA = {
         <div style="background: rgba(245,158,11,0.15); border: 1px solid #f59e0b; padding: 12px; border-radius: 10px; margin-bottom: 14px; text-align: center;">
           <span style="font-size: 24px;">🟡</span>
           <div style="font-weight: 800; color: #fbbf24; margin-top: 4px; font-size: 15px;">Офлайн файлууд дутуу (${diag.cachedCount}/${diag.totalCount} файл)</div>
-          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Доорх "Бүх файлыг албадан кэшлэх" товчийг дарж татаж авна уу.</div>
+          <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Доорх "Бүх файлыг албадан кэшлэх" товчийг дарж татна уу.</div>
         </div>
       `;
     } else {
@@ -389,14 +411,14 @@ window.PWA = {
       `;
     }
 
-    // Error Alert Box (if register failed)
+    // Error Alert Box (full error name & message)
     let errorBoxHtml = '';
     if (diag.error) {
       errorBoxHtml = `
         <div style="background: rgba(239,68,68,0.15); border: 1px solid #ef4444; border-radius: 10px; padding: 12px; margin-bottom: 14px;">
           <div style="display: flex; align-items: center; gap: 8px; color: #f87171; font-weight: 800; font-size: 13px;">
             <span>⚠️</span>
-            <span>Service Worker Бүртгэлийн Алдаа:</span>
+            <span>Service Worker Алдаа (Error Inspector):</span>
           </div>
           <div style="font-size: 12px; color: #fca5a5; margin-top: 6px; font-family: monospace;">
             <div><b>Нэр (error.name):</b> ${diag.error.name}</div>
@@ -498,7 +520,7 @@ window.PWA = {
 
         <!-- Action Buttons -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-          ${(!diag.hasController || !diag.hasActive) ? `
+          ${(!diag.hasController) ? `
             <button onclick="window.PWA.activateAndClaim()" class="btn-primary" style="flex: 1 1 100%; padding: 11px; font-size: 13px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #1d4ed8); font-weight: 800;">
               ⚡ Service Worker идэвхжүүлэх (Claim & Reload)
             </button>
@@ -560,7 +582,7 @@ window.PWA = {
         await reg.update().catch(() => {});
       }
 
-      this.logLifecycle('Хуудсыг дахин ачаалж (reload) холболтыг шинэчилж байна...');
+      this.logLifecycle('Хуудсыг дахин ачаалж (reload) Controller-ийг холбож байна...');
       setTimeout(() => {
         location.reload();
       }, 500);
@@ -569,7 +591,7 @@ window.PWA = {
     }
   },
 
-  // 5. Force Pre-caching of all critical files
+  // 5. Force Pre-caching of all critical files using atomic cache.addAll & clone
   async forcePrecacheAll() {
     const btn = event && event.target;
     if (btn) {
@@ -581,7 +603,7 @@ window.PWA = {
       const keys = await caches.keys();
       let activeCacheKey = keys.find(k => k.startsWith('mm-korean'));
       if (!activeCacheKey) {
-        activeCacheKey = 'mm-korean-v56';
+        activeCacheKey = 'mm-korean-v57';
       }
 
       const cache = await caches.open(activeCacheKey);
@@ -591,23 +613,12 @@ window.PWA = {
         try {
           const res = await fetch(item.path, { cache: 'no-cache' });
           if (res && res.ok) {
-            const blob = await res.blob();
-            const ctype = res.headers.get('content-type') || 'application/javascript; charset=utf-8';
-            const makeR = () => new Response(blob, {
-              status: 200,
-              statusText: 'OK',
-              headers: {
-                'Content-Type': ctype,
-                'Cache-Control': 'public, max-age=31536000'
-              }
-            });
-
-            await cache.put(item.path, makeR());
-            await cache.put(new URL(item.path, location.origin).href, makeR());
+            await cache.put(item.path, res.clone());
+            await cache.put(new URL(item.path, location.origin).href, res.clone());
 
             if (item.path === '/index.html') {
-              await cache.put('/', makeR());
-              await cache.put(new URL('/', location.origin).href, makeR());
+              await cache.put('/', res.clone());
+              await cache.put(new URL('/', location.origin).href, res.clone());
             }
 
             successCount++;
