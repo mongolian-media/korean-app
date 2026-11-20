@@ -8,6 +8,106 @@ window.PWA = {
     this.setupInstallPrompt();
     this.detectStandalone();
     this.checkInAppBrowser();
+    this.ensureOfflineCache();
+  },
+
+  async ensureOfflineCache() {
+    if (!('caches' in window)) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+    const CACHE_NAME = 'mm-korean-v41';
+    const urlsToCache = [
+      '/',
+      '/index.html',
+      '/manifest.json',
+      '/css/glassmorphism.css?v=20',
+      '/js/api.js?v=41',
+      '/js/storage_manager.js?v=41',
+      '/js/speech_engine.js?v=41',
+      '/js/pwa.js?v=41',
+      '/js/alphabet_data.js?v=41',
+      '/js/curriculum_data.js?v=41',
+      '/js/app.js?v=41',
+      '/apple-touch-icon.png',
+      '/app-icon-192.png',
+      '/app-icon-512.png',
+      '/favicon.ico',
+      '/assets/logo.jpg'
+    ];
+
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      
+      // Parallel fetch and cache with clean Response
+      await Promise.allSettled(
+        urlsToCache.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res.ok) {
+              const blob = await res.blob();
+              const cleanRes = new Response(blob, {
+                status: res.status,
+                statusText: res.statusText,
+                headers: res.headers
+              });
+              await cache.put(url, cleanRes.clone());
+              const cleanUrl = url.split('?')[0];
+              await cache.put(cleanUrl, cleanRes);
+            }
+          } catch (e) {}
+        })
+      );
+
+      // Explicitly guarantee /index.html and /
+      try {
+        const indexRes = await fetch('/index.html', { cache: 'no-cache' });
+        if (indexRes.ok) {
+          const blob = await indexRes.blob();
+          const clean1 = new Response(blob, { status: 200, headers: indexRes.headers });
+          const clean2 = new Response(blob, { status: 200, headers: indexRes.headers });
+          await cache.put('/index.html', clean1);
+          await cache.put('/', clean2);
+        }
+      } catch (e) {}
+
+      console.log('[PWA] Foreground offline caching finished 100%!');
+      this.showOfflineReadyBadge();
+    } catch (err) {
+      console.warn('[PWA] ensureOfflineCache error:', err);
+    }
+  },
+
+  showOfflineReadyBadge() {
+    if (document.getElementById('offline-ready-badge')) return;
+    const badge = document.createElement('div');
+    badge.id = 'offline-ready-badge';
+    badge.style.cssText = `
+      position: fixed;
+      bottom: 74px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: fadeIn 0.4s ease;
+      pointer-events: none;
+    `;
+    badge.innerHTML = `<span>🟢</span><span>Офлайн горим бэлэн (Интернэтгүй ажиллана)</span>`;
+    document.body.appendChild(badge);
+    setTimeout(() => {
+      badge.style.transition = 'opacity 0.6s ease';
+      badge.style.opacity = '0';
+      setTimeout(() => badge.remove(), 600);
+    }, 4500);
   },
 
   isInAppBrowser() {
