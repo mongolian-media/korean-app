@@ -379,7 +379,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         # 1.5 Handle root & asset icon requests directly with proper MIME types
         icon_names = [
             'apple-touch-icon.png', 'apple-touch-icon-precomposed.png',
-            'favicon.ico', 'favicon.png', 'icon-192.png', 'icon-512.png'
+            'favicon.ico', 'favicon.png', 'icon-192.png', 'icon-512.png',
+            'app-icon.png', 'app-icon-192.png', 'app-icon-512.png'
         ]
         clean_path = path.lstrip('/')
         base_name = os.path.basename(clean_path)
@@ -398,7 +399,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', ctype)
                     self.send_header('Content-Length', str(len(img_bytes)))
-                    self.send_header('Cache-Control', 'public, max-age=604800')
+                    self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
                     self.end_headers()
                     self.wfile.write(img_bytes)
                     return
