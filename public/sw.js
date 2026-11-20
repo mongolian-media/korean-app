@@ -1,6 +1,6 @@
-// MONGOLIAN MEDIA — Service Worker
-// Cache version: mm-korean-v39
-const CACHE_NAME = 'mm-korean-v39';
+// MONGOLIAN MEDIA — Service Worker (iOS Safari & Android PWA Hardened)
+// Cache version: mm-korean-v40
+const CACHE_NAME = 'mm-korean-v40';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -23,17 +23,32 @@ const SHELL_ASSETS = [
   '/assets/logo.jpg'
 ];
 
+// Clean WebKit / iOS Safari redirect flag so cached responses can be served offline
+function cleanResponse(response) {
+  if (!response || !response.redirected) return response;
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
+
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW v39] Resilient pre-caching app shell assets...');
-      return Promise.allSettled(
-        SHELL_ASSETS.map((asset) =>
-          cache.add(asset).catch((err) => {
-            console.warn('[SW v39] Failed to pre-cache individual asset:', asset, err);
-          })
-        )
+    caches.open(CACHE_NAME).then(async (cache) => {
+      console.log('[SW v40] Pre-caching all assets with cleanResponse...');
+      await Promise.allSettled(
+        SHELL_ASSETS.map(async (asset) => {
+          try {
+            const res = await fetch(asset, { cache: 'no-cache' });
+            if (res.status === 200) {
+              await cache.put(asset, cleanResponse(res));
+            }
+          } catch (err) {
+            console.warn('[SW v40] Failed to cache asset:', asset, err);
+          }
+        })
       );
     })
   );
@@ -45,7 +60,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME) {
-            console.log('[SW v39] Purging outdated cache:', k);
+            console.log('[SW v40] Purging outdated cache:', k);
             return caches.delete(k);
           }
         })
@@ -63,36 +78,44 @@ self.addEventListener('fetch', (e) => {
   }
 
   // 1. Navigation Requests (HTML / App Shell)
-  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('.html')) {
-    // If completely offline, return cached shell instantly
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      e.respondWith(
-        caches.match('/index.html', { ignoreSearch: true }).then((cached) => {
-          return cached || caches.match('/', { ignoreSearch: true });
-        })
-      );
-      return;
-    }
+  const isNav = e.request.mode === 'navigate' ||
+                e.request.destination === 'document' ||
+                url.pathname === '/' ||
+                url.pathname === '/index.html' ||
+                url.pathname.endsWith('.html') ||
+                (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'));
 
-    // When online, try network with instant cache fallback
+  if (isNav) {
     e.respondWith(
-      fetch(e.request).then((res) => {
-        if (res.status === 200) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return res;
-      }).catch(() => {
-        return caches.match(e.request, { ignoreSearch: true }).then((cached) => {
-          return cached || caches.match('/index.html', { ignoreSearch: true }) || caches.match('/', { ignoreSearch: true });
-        });
-      })
+      fetch(e.request)
+        .then((res) => {
+          if (res.status === 200) {
+            const clone = cleanResponse(res.clone());
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('/index.html', clone);
+              cache.put('/', cleanResponse(res.clone()));
+            });
+          }
+          return res;
+        })
+        .catch(async () => {
+          // OFFLINE FALLBACK: Always serve the cached HTML shell
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match('/index.html', { ignoreSearch: true })
+                      || await cache.match('/', { ignoreSearch: true })
+                      || await caches.match('/index.html')
+                      || await caches.match('/');
+          if (cached) return cached;
+          return new Response('<h1>Офлайн горим</h1><p>Интернэтээ асааж 1 удаа ачаална уу.</p>', {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        })
     );
     return;
   }
 
-  // 2. Static Assets (JS, CSS, Icons, Fonts, Audio, Images)
-  // Cache-First with ignoreSearch so ?v=39 matches cached /js/app.js
+  // 2. Static Assets (JS, CSS, Icons, Images, Audio)
+  // Cache-First with ignoreSearch so ?v=40 matches cached /js/app.js
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cached) => {
       if (cached) return cached;
@@ -100,12 +123,12 @@ self.addEventListener('fetch', (e) => {
         if (pathCached) return pathCached;
         return fetch(e.request).then((res) => {
           if (res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
-            const clone = res.clone();
+            const clone = cleanResponse(res.clone());
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
           }
           return res;
         }).catch(() => {
-          // If offline and asset is an HTML/JS, try matching pathname
+          // If completely offline and asset not found with query, try matching raw pathname
           return caches.match(url.pathname, { ignoreSearch: true });
         });
       });
