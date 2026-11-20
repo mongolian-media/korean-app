@@ -259,6 +259,29 @@ body.dark-mode .app-header {
   transform: scale(0.95);
 }
 
+.fb-header-btn {
+  background: rgba(24, 119, 242, 0.12);
+  border: 1px solid rgba(24, 119, 242, 0.35);
+  color: #1877F2;
+  text-decoration: none;
+}
+
+body.dark-mode .fb-header-btn {
+  background: rgba(24, 119, 242, 0.22);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.fb-header-btn:hover {
+  background: rgba(24, 119, 242, 0.28);
+  border-color: #1877F2;
+  transform: translateY(-1px) scale(1.08);
+  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.35);
+}
+
+.fb-header-btn svg {
+  display: block;
+}
+
 /* Mascot Helper Banner (Монгол хүү) */
 .mascot-banner {
   display: flex;
