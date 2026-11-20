@@ -376,6 +376,35 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/'):
             return self.handle_api_get(path, query)
 
+        # 1.5 Handle root & asset icon requests directly with proper MIME types
+        icon_names = [
+            'apple-touch-icon.png', 'apple-touch-icon-precomposed.png',
+            'favicon.ico', 'favicon.png', 'icon-192.png', 'icon-512.png'
+        ]
+        clean_path = path.lstrip('/')
+        base_name = os.path.basename(clean_path)
+        if base_name in icon_names:
+            # Check public root or public/assets
+            target_path = os.path.join(PUBLIC_DIR, clean_path)
+            if not os.path.exists(target_path):
+                target_path = os.path.join(PUBLIC_DIR, 'assets', base_name)
+            if not os.path.exists(target_path):
+                target_path = os.path.join(PUBLIC_DIR, base_name)
+            if os.path.exists(target_path):
+                ctype = 'image/png' if target_path.endswith('.png') else 'image/x-icon'
+                try:
+                    with open(target_path, 'rb') as img_f:
+                        img_bytes = img_f.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', ctype)
+                    self.send_header('Content-Length', str(len(img_bytes)))
+                    self.send_header('Cache-Control', 'public, max-age=604800')
+                    self.end_headers()
+                    self.wfile.write(img_bytes)
+                    return
+                except Exception as e:
+                    pass
+
         # 2. Static File Serving with Single Page App fallback
         file_path = os.path.join(PUBLIC_DIR, path.lstrip('/'))
         if not os.path.exists(file_path) and not path.startswith('/api'):
@@ -753,7 +782,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             device_id = data.get('device_id', '').strip() or secrets.token_hex(8)
             device_name = data.get('device_name', '').strip() or 'Admin Device'
 
-            admin_pwd = CONFIG["server"].get("admin_password", "admin")
+            admin_pwd = os.environ.get('ADMIN_PASSWORD') or CONFIG["server"].get("admin_password", "admin")
             if password != admin_pwd:
                 log_audit('SYSTEM', 'ADMIN_LOGIN_FAILED', f"Email: {email} | IP: {self.client_address[0]}")
                 return self.send_json(401, {"error": "invalid_password", "message": "Админы нууц үг буруу байна."})

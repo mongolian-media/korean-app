@@ -2,7 +2,7 @@
 // Caches App Shell, Brand Assets & UI scripts for fast offline shell loading.
 // Protected user content is strictly authorized by the backend server.
 
-const CACHE_NAME = 'mm-korean-v14';
+const CACHE_NAME = 'mm-korean-v16';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -19,7 +19,8 @@ const SHELL_ASSETS = [
   './assets/mascot.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  './assets/icon.svg'
+  './assets/apple-touch-icon.png',
+  './assets/app_icon.jpg'
 ];
 
 self.addEventListener('install', (e) => {

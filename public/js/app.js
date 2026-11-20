@@ -156,6 +156,7 @@ window.App = {
       this.renderDaysList(container);
     } else if (viewName.startsWith('day-')) {
       const dId = parseInt(viewName.replace('day-', '')) || 1;
+      this.currentDayId = dId;
       this.renderDayLesson(container, dId);
     } else if (viewName === 'review') {
       this.renderReview(container);
@@ -614,6 +615,7 @@ window.App = {
   },
 
   openDay(dayId) {
+    dayId = parseInt(dayId) || 1;
     if (dayId > 1 && !this.hasActiveAccess()) {
       if (!this.userProfile) {
         this.openLoginModal('🔒 Түгжээтэй хичээл', `
@@ -631,9 +633,18 @@ window.App = {
       return;
     }
 
+    this.currentDayId = dayId;
+    this.currentStep = 0;
+    this.currentSentenceIdx = 0;
+
     const state = window.StorageManager.get();
-    state.activeDay = dayId;
+    if (!state.activeDay || dayId > state.activeDay) {
+      state.activeDay = dayId;
+    }
+    state.activeStep = 0;
+    state.activeSentenceIndex = 0;
     window.StorageManager.save(state);
+
     this.navigate(`day-${dayId}`);
   },
 
@@ -665,6 +676,9 @@ window.App = {
   // 4. DAY LESSON DETAIL & 5-STEP WORKFLOW
   // =============================================================
   renderDayLesson(container, dayId) {
+    dayId = parseInt(dayId) || this.currentDayId || 1;
+    this.currentDayId = dayId;
+
     if (dayId > 1 && !this.hasActiveAccess()) {
       this.renderPaywall(container, dayId);
       return;
@@ -690,8 +704,12 @@ window.App = {
       <div class="fade-in">
         <!-- Top Day Header -->
         <div class="glass-card" style="padding: 16px 20px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
             <button class="btn-glass" onclick="App.navigate('lessons-list')">← 30 Өдөр</button>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              ${dayId > 1 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId - 1})">← ${dayId - 1}-р өдөр</button>` : ''}
+              ${dayId < 30 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId + 1})">${dayId + 1}-р өдөр ➔</button>` : ''}
+            </div>
             <span class="sentence-badge">${day.category}</span>
           </div>
           <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 4px;">${day.title}</h2>
@@ -1336,6 +1354,7 @@ window.App = {
   },
 
   completeDayLesson(dayId) {
+    dayId = parseInt(dayId) || this.currentDayId || 1;
     const state = window.StorageManager.get();
     if (!state.completedDays.includes(dayId)) {
       state.completedDays.push(dayId);
@@ -1343,18 +1362,19 @@ window.App = {
     // Schedule Spaced Repetition for day's key sentences
     window.StorageManager.scheduleNextReview(state, `day_${dayId}`, true);
 
-    // Advance active day if not 30
-    if (dayId < 30) {
+    // Only advance activeDay if completing current highest reached day
+    if (dayId >= (state.activeDay || 1) && dayId < 30) {
       state.activeDay = dayId + 1;
-      state.activeStep = 0;
-      state.activeSentenceIndex = 0;
     }
-
+    state.activeStep = 0;
+    state.activeSentenceIndex = 0;
     window.StorageManager.save(state);
 
     const savedQuiz = (state.dayQuizAnswers && state.dayQuizAnswers[dayId]) || {};
     const correctCount = Object.values(savedQuiz).filter(a => a.isCorrect).length;
     const answeredCount = Object.keys(savedQuiz).length;
+
+    const nextDayId = dayId < 30 ? dayId + 1 : null;
 
     this.openModal('🎉 Баяр хүргэе!', `
       <div style="text-align: center; padding: 12px 0;">
@@ -1365,11 +1385,21 @@ window.App = {
             📊 5 даалгаварт сорилын үр дүн: ${correctCount} / 5 зөв (${Math.round((correctCount / 5) * 100)}%)
           </div>
         ` : ''}
-        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 16px;">
-          Та өнөөдрийн 10 үндсэн өгүүлбэрийг бүрэн судалж, сүүдэрлэх дасгал болон сорилоо амжилттай давлаа.
-          Зайтай давталтын системд бүртгэгдсэн тул маргааш богино давтлага хийх болно.
+        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 20px;">
+          Та ${dayId}-р өдрийн 10 үндсэн өгүүлбэрийг бүрэн судалж, сорилоо амжилттай давлаа.
+          Энэ өдрийн хичээл ногоон тэмдэглэгээтэй (✓ Дууссан) боллоо.
         </p>
-        <button class="btn-primary" onclick="App.closeModal(); App.navigate('home');">Нүүр хуудас руу буцах</button>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          ${nextDayId ? `
+            <button class="btn-primary" style="padding: 14px 20px; font-size: 15px; font-weight: 700;" onclick="App.closeModal(); App.openDay(${nextDayId});">
+              ➔ Дараагийн өдөр (${nextDayId}-р өдөр) рүү шилжих
+            </button>
+          ` : ''}
+          <button class="btn-glass" style="padding: 12px 20px;" onclick="App.closeModal(); App.navigate('home');">
+            🏠 Нүүр хуудас руу буцах
+          </button>
+        </div>
       </div>
     `);
   },
