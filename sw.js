@@ -1,17 +1,17 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v55)
-const CACHE_NAME = 'mm-korean-v55';
+// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v56)
+const CACHE_NAME = 'mm-korean-v56';
 
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/css/glassmorphism.css',
+  '/js/pwa.js',
   '/js/api.js',
   '/js/speech_engine.js',
   '/js/storage_manager.js',
   '/js/alphabet_data.js',
   '/js/curriculum_data.js',
-  '/js/pwa.js',
   '/js/app.js',
   '/apple-touch-icon.png',
   '/favicon.ico',
@@ -69,7 +69,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      console.log('[SW v54] Pre-caching in parallel...');
+      console.log('[SW v56] Pre-caching in parallel...');
 
       // 1. First priority: Cache HTML shell
       try {
@@ -90,7 +90,7 @@ self.addEventListener('install', (event) => {
           await cache.put(new URL('/index.html', self.location.origin).href, makeHtml());
         }
       } catch (err) {
-        console.warn('[SW v54] Root HTML fetch failed:', err);
+        console.warn('[SW v56] Root HTML fetch failed:', err);
       }
 
       // 2. Parallel caching of other critical assets
@@ -114,11 +114,11 @@ self.addEventListener('install', (event) => {
               await cache.put(new URL(url, self.location.origin).href, makeRes());
             }
           } catch (e) {
-            console.warn('[SW v54] Precache fail:', url);
+            console.warn('[SW v56] Precache fail:', url);
           }
         })
       );
-      console.log('[SW v54] All assets pre-cached!');
+      console.log('[SW v56] All assets pre-cached!');
     })()
   );
 });
@@ -136,19 +136,29 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW v54] Purging old cache:', key);
+            console.log('[SW v56] Purging old cache:', key);
             return caches.delete(key);
           }
         })
       );
-      await self.clients.claim();
-      console.log('[SW v55] Claimed clients.');
+      try {
+        await self.clients.claim();
+        console.log('[SW v56] Claimed clients.');
+      } catch (e) {
+        console.warn('[SW v56] Claim clients failed:', e);
+      }
     })()
   );
 });
 
-// Diagnostic Panel Force Precache handler
+// Skip waiting & message listener
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLAIM_CLIENTS') {
+    self.clients.claim().catch(() => {});
+  }
   if (event.data && event.data.type === 'FORCE_PRECACHE') {
     event.waitUntil(
       (async () => {
