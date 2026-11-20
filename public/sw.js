@@ -1,5 +1,5 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v52)
-const CACHE_NAME = 'mm-korean-v52';
+// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v53)
+const CACHE_NAME = 'mm-korean-v53';
 
 const PRECACHE_ASSETS = [
   '/',
