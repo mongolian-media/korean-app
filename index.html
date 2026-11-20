@@ -63,15 +63,28 @@
         var pollTimer = setInterval(function() {
           pollCount++;
           caches.keys().then(function(keys) {
-            var found = keys.some(function(k) { return k.indexOf('mm-korean') !== -1; });
-            if (found) {
-              showBadge();
-              clearInterval(pollTimer);
-            } else if (pollCount > 15) {
+            var targetKey = keys.find(function(k) { return k.indexOf('mm-korean') !== -1; });
+            if (targetKey) {
+              caches.open(targetKey).then(function(c) {
+                // Verify actual critical assets are in cache, NEVER just the cache name!
+                Promise.all([
+                  c.match('/index.html', { ignoreSearch: true }),
+                  c.match('/js/app.js', { ignoreSearch: true }),
+                  c.match('/js/curriculum_data.js', { ignoreSearch: true })
+                ]).then(function(matches) {
+                  var allFound = matches.every(function(m) { return m && m.ok; });
+                  if (allFound) {
+                    showBadge('🟢 Офлайн горим 100% бэлэн (Бүх файл суусан)');
+                    clearInterval(pollTimer);
+                  }
+                }).catch(function() {});
+              }).catch(function() {});
+            }
+            if (pollCount > 15) {
               clearInterval(pollTimer);
             }
           }).catch(function() { clearInterval(pollTimer); });
-        }, 700);
+        }, 800);
       }
     })();
   </script>

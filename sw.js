@@ -1,5 +1,5 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v54)
-const CACHE_NAME = 'mm-korean-v54';
+// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v55)
+const CACHE_NAME = 'mm-korean-v55';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -142,9 +142,45 @@ self.addEventListener('activate', (event) => {
         })
       );
       await self.clients.claim();
-      console.log('[SW v54] Claimed clients.');
+      console.log('[SW v55] Claimed clients.');
     })()
   );
+});
+
+// Diagnostic Panel Force Precache handler
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'FORCE_PRECACHE') {
+    event.waitUntil(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        for (const url of PRECACHE_ASSETS) {
+          try {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res && res.ok) {
+              const blob = await res.blob();
+              const ctype = res.headers.get('content-type') || getContentType(url);
+              const makeR = () => new Response(blob, {
+                status: 200,
+                headers: {
+                  'Content-Type': ctype,
+                  'Cache-Control': 'public, max-age=31536000'
+                }
+              });
+              await cache.put(url, makeR());
+              await cache.put(new URL(url, self.location.origin).href, makeR());
+              if (url === '/index.html') {
+                await cache.put('/', makeR());
+                await cache.put(new URL('/', self.location.origin).href, makeR());
+              }
+            }
+          } catch (e) {}
+        }
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ success: true, cacheName: CACHE_NAME });
+        }
+      })()
+    );
+  }
 });
 
 // Fetch Interception: Resilient Cache-First for Offline Support
