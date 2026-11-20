@@ -15,20 +15,21 @@ window.PWA = {
     if (!('caches' in window)) return;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
-    const CACHE_NAME = 'mm-korean-v41';
+    const CACHE_NAME = 'mm-korean-v43';
     const urlsToCache = [
       '/',
       '/index.html',
       '/manifest.json',
       '/css/glassmorphism.css?v=20',
-      '/js/api.js?v=41',
-      '/js/storage_manager.js?v=41',
-      '/js/speech_engine.js?v=41',
-      '/js/pwa.js?v=41',
-      '/js/alphabet_data.js?v=41',
-      '/js/curriculum_data.js?v=41',
-      '/js/app.js?v=41',
+      '/js/api.js?v=43',
+      '/js/storage_manager.js?v=43',
+      '/js/speech_engine.js?v=43',
+      '/js/pwa.js?v=43',
+      '/js/alphabet_data.js?v=43',
+      '/js/curriculum_data.js?v=43',
+      '/js/app.js?v=43',
       '/apple-touch-icon.png',
+      '/apple-touch-icon-180x180.png',
       '/app-icon-192.png',
       '/app-icon-512.png',
       '/favicon.ico',

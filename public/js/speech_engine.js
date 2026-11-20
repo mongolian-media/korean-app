@@ -10,7 +10,7 @@ window.SpeechEngine = {
   audioChunks: [],
   userAudioUrl: null,
   recognition: null,
-  defaultRate: 0.9,
+  defaultRate: 1.0,
   audioEnginePreference: 'auto', // 'auto', 'stream', 'webspeech'
 
   init() {
@@ -55,12 +55,35 @@ window.SpeechEngine = {
     }
   },
 
+  cleanKoreanText(text) {
+    if (!text) return '';
+    return text
+      .replace(/\[.*?\]/g, '') // remove bracketed comments like [Зөвхөн дотно найздаа]
+      .replace(/\(.*?\)/g, '') // remove parenthesized acronyms
+      .replace(/['"“”‘’]/g, '') // remove quotes
+      .replace(/[^가-힣0-9.,?!~ \n]/g, ' ') // keep Korean characters, numbers, basic punctuation
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
   getKoreanVoice() {
     if (!('speechSynthesis' in window)) return null;
     try {
       const voices = window.speechSynthesis.getVoices() || [];
-      const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang === 'ko_KR' || (v.lang && v.lang.startsWith('ko')));
-      return koVoice || null;
+      if (!voices.length) return null;
+      const koVoices = voices.filter(v =>
+        v.lang === 'ko-KR' || v.lang === 'ko_KR' || (v.lang && v.lang.toLowerCase().startsWith('ko'))
+      );
+      if (!koVoices.length) return null;
+
+      // Prioritize Siri, Enhanced, Premium, Yuna, Sora Korean voices
+      const premium = koVoices.find(v => /premium|enhanced|siri|yuna|sora|natural/i.test(v.name));
+      if (premium) return premium;
+
+      const networkVoice = koVoices.find(v => !v.localService);
+      if (networkVoice) return networkVoice;
+
+      return koVoices[0];
     } catch (e) {
       return null;
     }
@@ -88,46 +111,39 @@ window.SpeechEngine = {
     this.isSpeaking = false;
   },
 
-  // Master Speak Router
+  // Master Speak Router - Prioritizes 100% Fluent HD Google Studio TTS
   speak(text, options = {}) {
     if (!text || !text.trim()) return;
 
     this.stop();
 
-    // If completely offline, immediately use local device WebSpeech synthesis
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      this.speakWebSpeech(text, options);
+    const cleanText = this.cleanKoreanText(text) || text.trim();
+
+    // If completely offline, use local device WebSpeech synthesis immediately
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      this.speakWebSpeech(cleanText, options);
       return;
     }
 
-    const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const pref = options.engine || this.audioEnginePreference;
-
-    if (pref === 'stream') {
-      this.playAudioStream(text, options);
-    } else if (pref === 'webspeech') {
-      this.speakWebSpeech(text, options);
-    } else {
-      // 'auto' mode:
-      // On iOS (iPhone / iPad), WebSpeech must be triggered SYNCHRONOUSLY inside user touch
-      // to avoid WebKit gesture expiration, then fallback to audio stream.
-      if (isIos) {
-        this.speakWebSpeech(text, {
-          ...options,
-          onFallback: () => this.playAudioStream(text, options)
-        });
-      } else {
-        // On Android / Desktop, try Audio Stream first (Google TTS Studio), fallback to WebSpeech
-        this.playAudioStream(text, {
-          ...options,
-          onFallback: () => this.speakWebSpeech(text, options)
-        });
-      }
+    if (pref === 'webspeech') {
+      this.speakWebSpeech(cleanText, options);
+      return;
     }
+
+    // Default & 'auto': ALWAYS play Google HD Studio Audio Stream first!
+    // It gives 100% natural, human, authentic Seoul Korean pronunciation
+    this.playAudioStream(cleanText, {
+      ...options,
+      onFallback: () => {
+        console.log('[Audio Stream fallback to WebSpeech]');
+        this.speakWebSpeech(cleanText, options);
+      }
+    });
   },
 
   speakSlow(text, options = {}) {
-    this.speak(text, { ...options, rate: 0.72 });
+    this.speak(text, { ...options, rate: 0.75 });
   },
 
   // -------------------------------------------------------------
@@ -212,7 +228,12 @@ window.SpeechEngine = {
     utterance.rate = Math.max(0.6, Math.min(rate, 1.8));
     utterance.pitch = 1.0;
 
-    const voice = this.getKoreanVoice();
+    let voice = this.getKoreanVoice();
+    if (!voice && 'speechSynthesis' in window) {
+      const vList = window.speechSynthesis.getVoices() || [];
+      const kMatch = vList.find(v => v.lang && v.lang.toLowerCase().includes('ko'));
+      if (kMatch) voice = kMatch;
+    }
     if (voice) {
       utterance.voice = voice;
     }
