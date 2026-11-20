@@ -1807,7 +1807,7 @@ window.App = {
             <h4 style="margin-bottom: 8px;">🔑 1 удаагийн кодоо идэвхжүүлэх</h4>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Батцогтоос авсан 1 удаагийн нэвтрэх кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
             <div style="display: flex; gap: 8px;">
-              <input type="text" id="profile-access-code" class="form-input" placeholder="MM-202020" style="text-transform: uppercase; font-weight: 700; text-align: center;">
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="profile-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
               <button class="btn-primary" style="width: auto; padding: 10px 18px;" onclick="App.submitProfileCode()">Нэвтрэх</button>
             </div>
           </div>
@@ -2241,7 +2241,7 @@ window.App = {
 
         <div class="form-group" style="margin-bottom: 18px;">
           <label class="form-label">🔑 1 удаагийн нэвтрэх код:</label>
-          <input type="text" id="login-access-code" class="form-input" placeholder="Жишээ: MM-101010" style="text-transform: uppercase; font-weight: 800; letter-spacing: 2px; font-size: 18px; text-align: center;">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
           <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
             *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Батцогтоос кодоо авна уу).*
           </span>
