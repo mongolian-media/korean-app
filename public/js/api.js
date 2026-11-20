@@ -49,7 +49,13 @@ window.API = {
 
     try {
       const res = await fetch(`${this.baseUrl}${endpoint}`, opts);
-      const data = await res.json();
+      const text = await res.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        data = { message: text || `Серверийн хариу: ${res.status}` };
+      }
       return { ok: res.ok, status: res.status, data };
     } catch (err) {
       console.warn('[API Error]', endpoint, err);
