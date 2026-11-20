@@ -2,7 +2,7 @@
 // Caches App Shell, Brand Assets & UI scripts for fast offline shell loading.
 // Protected user content is strictly authorized by the backend server.
 
-const CACHE_NAME = 'mm-korean-v16';
+const CACHE_NAME = 'mm-korean-v17';
 const SHELL_ASSETS = [
   './',
   './index.html',
