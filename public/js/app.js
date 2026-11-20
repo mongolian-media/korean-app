@@ -1947,6 +1947,30 @@ window.App = {
           </div>
         </div>
 
+        <!-- 🛠️ Офлайн оношилгооны самбар (Item 1 Diagnostic Panel) -->
+        <div class="glass-card" style="border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(15, 23, 42, 0.85); margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🛠️</span>
+              <strong style="font-size: 14px; color: #60a5fa;">Офлайн горимын оношилгоо</strong>
+            </div>
+            <button class="btn-primary" style="width: auto; padding: 4px 12px; font-size: 12px;" onclick="window.PWA.openDiagnosticModal()">
+              Дэлгэрэнгүй
+            </button>
+          </div>
+          <div id="profile-diagnostic-summary" style="font-size: 13px; line-height: 1.6; color: var(--text-muted); background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px;">
+            Төлөв шалгаж байна...
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button onclick="window.PWA.forcePrecacheAll()" class="btn-primary" style="flex: 1; padding: 8px; font-size: 12px; border-radius: 8px;">
+              📥 Бүх файлыг албадан кэшлэх
+            </button>
+            <button onclick="window.PWA.renderProfileSummary('profile-diagnostic-summary')" class="btn-secondary" style="padding: 8px 12px; font-size: 12px; border-radius: 8px;">
+              🔄 Шалгах
+            </button>
+          </div>
+        </div>
+
         ${user && user.role === 'admin' ? `
           <div class="glass-card" style="border: 2px solid var(--brand-blue); cursor: pointer;" onclick="App.navigate('admin')">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1966,6 +1990,10 @@ window.App = {
         ` : ''}
       </div>
     `;
+
+    if (window.PWA && window.PWA.renderProfileSummary) {
+      window.PWA.renderProfileSummary('profile-diagnostic-summary');
+    }
   },
 
   toggleGaligSetting(val) {
