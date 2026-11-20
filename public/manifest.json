@@ -1,7 +1,7 @@
 {
   "name": "MONGOLIAN MEDIA — Солонгос хэлний сургалт",
-  "short_name": "Солонгос Яриа",
-  "description": "Монгол хүнд зориулсан Солонгос хэлний 30 өдрийн яриа, үсгийн бэлтгэл, сүүдэрлэх дасгалжуулагч апп",
+  "short_name": "MON KOR",
+  "description": "Монгол хүнд зориулсан Солонгос хэлний яриа, үсгийн бэлтгэл, сүүдэрлэх дасгалжуулагч апп",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -15,7 +15,7 @@
   ],
   "icons": [
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/apple-touch-icon-180x180-v62.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
@@ -24,19 +24,13 @@
       "src": "/app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/app-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/mascot-icon-v1.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
