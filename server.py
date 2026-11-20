@@ -448,7 +448,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
-                self.send_header('ETag', '"v46-manifest"')
+                self.send_header('ETag', '"v47-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
@@ -464,7 +464,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
-                self.send_header('ETag', '"v46-html"')
+                self.send_header('ETag', '"v47-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
@@ -505,8 +505,38 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 except Exception as e:
                     pass
 
-        # 2. Static File Serving with Single Page App fallback
+        # 2. Static File Serving with Single Page App fallback & aggressive HTTP disk caching
         file_path = os.path.join(PUBLIC_DIR, path.lstrip('/'))
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            ext = os.path.splitext(file_path)[1].lower()
+            mime_map = {
+                '.js': 'application/javascript; charset=utf-8',
+                '.css': 'text/css; charset=utf-8',
+                '.json': 'application/json; charset=utf-8',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.ico': 'image/x-icon',
+                '.svg': 'image/svg+xml',
+                '.woff2': 'font/woff2',
+                '.mp3': 'audio/mpeg'
+            }
+            ctype = mime_map.get(ext)
+            if ctype:
+                try:
+                    with open(file_path, 'rb') as f:
+                        file_data = f.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', ctype)
+                    self.send_header('Content-Length', str(len(file_data)))
+                    self.send_header('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(file_data)
+                    return
+                except Exception:
+                    pass
+
         if not os.path.exists(file_path):
             # Only fallback to index.html for navigation/SPA routes (routes without a file extension)
             ext = os.path.splitext(path)[1]
