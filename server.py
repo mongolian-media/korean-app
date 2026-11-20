@@ -466,6 +466,9 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 target_path = os.path.join(PUBLIC_DIR, 'assets', base_name)
             if not os.path.exists(target_path):
                 target_path = os.path.join(PUBLIC_DIR, base_name)
+            # Fallback for any apple-touch-icon variant (e.g. apple-touch-icon-180x180.png)
+            if not os.path.exists(target_path) and 'apple-touch-icon' in base_name:
+                target_path = os.path.join(PUBLIC_DIR, 'apple-touch-icon.png')
             if os.path.exists(target_path) and os.path.isfile(target_path):
                 ctype = 'image/png' if target_path.endswith('.png') else 'image/x-icon'
                 try:
@@ -484,9 +487,14 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
         # 2. Static File Serving with Single Page App fallback
         file_path = os.path.join(PUBLIC_DIR, path.lstrip('/'))
-        if not os.path.exists(file_path) and not path.startswith('/api'):
-            # Fallback to index.html for SPA routing
-            self.path = '/index.html'
+        if not os.path.exists(file_path):
+            # Only fallback to index.html for navigation/SPA routes (routes without a file extension)
+            ext = os.path.splitext(path)[1]
+            if not ext and not path.startswith('/api'):
+                self.path = '/index.html'
+            else:
+                self.send_error(404, "File not found")
+                return
 
         return super().do_GET()
 
