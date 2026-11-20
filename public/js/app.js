@@ -143,6 +143,42 @@ window.App = {
     if (icon) icon.textContent = isDark ? '☀️' : '🌙';
   },
 
+  openFacebook(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const webUrl = 'https://www.facebook.com/MediaGorrr';
+    const ua = navigator.userAgent || '';
+    const isIos = /iPhone|iPad|iPod/i.test(ua) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+
+    if (isIos) {
+      // iOS Facebook App deep link
+      const appUrl = 'fb://facewebmodal/f?href=' + encodeURIComponent(webUrl);
+      const start = Date.now();
+      window.location.href = appUrl;
+      setTimeout(() => {
+        if (Date.now() - start < 1500) {
+          window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+      }, 500);
+    } else if (isAndroid) {
+      // Android Facebook App deep link
+      const appUrl = 'fb://facewebmodal/f?href=' + encodeURIComponent(webUrl);
+      const start = Date.now();
+      window.location.href = appUrl;
+      setTimeout(() => {
+        if (Date.now() - start < 1500) {
+          window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+      }, 500);
+    } else {
+      window.open(webUrl, '_blank', 'noopener,noreferrer');
+    }
+  },
+
   navigate(viewName, pushState = true) {
     this.currentView = viewName;
     if (pushState) {
@@ -1978,6 +2014,21 @@ window.App = {
             <button class="btn-glass" onclick="window.StorageManager.exportBackup()">📥 Ахицыг JSON татах</button>
             <button class="btn-glass" onclick="App.promptImportBackup()">📤 Ахиц сэргээх</button>
           </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.openFacebook(event)">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: #1877F2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </div>
+            <div>
+              <strong style="font-size: 14px; display: block;">MONGOLIAN MEDIA Facebook</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">fb.com/MediaGorrr албан ёсны хуудсаар холбогдох</span>
+            </div>
+          </div>
+          <span style="font-size: 16px; color: #1877F2;">➔</span>
         </div>
 
         ${user && user.role === 'admin' ? `
