@@ -706,6 +706,11 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             # Find matching code (case-insensitive)
             c.execute("SELECT * FROM invites WHERE UPPER(code) = ?", (code,))
             inv = c.fetchone()
+            if not inv:
+                digits_only = ''.join(ch for ch in code if ch.isdigit())
+                if len(digits_only) == 6:
+                    c.execute("SELECT * FROM invites WHERE UPPER(code) = ? OR UPPER(code) = ?", (digits_only, f"MM-{digits_only}"))
+                    inv = c.fetchone()
 
             if not inv:
                 conn.close()
@@ -1227,7 +1232,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 else:
                     for _ in range(count):
                         while True:
-                            new_c = f"MM-{secrets.randbelow(900000) + 100000}"
+                            new_c = str(secrets.randbelow(900000) + 100000)
                             c.execute("SELECT id FROM invites WHERE code = ?", (new_c,))
                             if not c.fetchone():
                                 break
