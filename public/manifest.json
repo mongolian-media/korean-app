@@ -2,7 +2,7 @@
   "name": "MONGOLIAN MEDIA — Солонгос хэлний сургалт",
   "short_name": "Солонгос Яриа",
   "description": "Монгол хүнд зориулсан Солонгос хэлний 30 өдрийн яриа, үсгийн бэлтгэл, сүүдэрлэх дасгалжуулагч апп",
-  "start_url": "/?app=20",
+  "start_url": "/?app=30",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -15,7 +15,7 @@
   ],
   "icons": [
     {
-      "src": "/mascot-icon-v1.png",
+      "src": "/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
@@ -29,6 +29,12 @@
     {
       "src": "/app-icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/mascot-icon-v1.png",
+      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     }
