@@ -269,11 +269,11 @@ window.SpeechEngine = {
     this.currentAudio = audio;
 
     const rate = options.rate !== undefined ? options.rate : this.defaultRate;
-    audio.addEventListener('loadedmetadata', () => {
+    audio.onloadedmetadata = () => {
       if (rate && rate !== 1.0) {
         try { audio.playbackRate = Math.max(0.5, Math.min(rate, 2.0)); } catch (e) {}
       }
-    });
+    };
 
     audio.onplay = () => {
       this.isSpeaking = true;
@@ -287,7 +287,6 @@ window.SpeechEngine = {
       if (options.onEnd) options.onEnd();
     };
 
-    let triedDirect = false;
     const handleAudioFailure = (err) => {
       console.warn('[Audio Stream Error]', err);
       this.isSpeaking = false;
@@ -300,16 +299,7 @@ window.SpeechEngine = {
         return;
       }
 
-      if (!triedDirect) {
-        triedDirect = true;
-        audio.src = directUrl;
-        audio.load();
-        audio.play().catch(() => {
-          this.speakWebSpeech(cleanText, options);
-        });
-        return;
-      }
-
+      // Online stream failure: fallback immediately to Web Speech synthesis
       if (options.onFallback) {
         options.onFallback();
       } else {
@@ -322,7 +312,6 @@ window.SpeechEngine = {
     };
 
     audio.src = backendUrl;
-    audio.load();
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {

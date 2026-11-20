@@ -1,4 +1,4 @@
-// MONGOLIAN MEDIA — PWA Mobile Installation & Offline Controller (Version 63)
+// MONGOLIAN MEDIA — PWA Mobile Installation & Offline Controller (Version 64)
 // Built on drive.uugiscar.com standard: updateViaCache: 'none', silent background caching
 
 window.PWA = {

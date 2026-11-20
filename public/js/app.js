@@ -23,10 +23,49 @@ window.App = {
     this._cachedSentencesList = null;
   },
 
+  _isEntitlementVerified: false,
+
+  async verifyEntitlementOffline(ent, profile) {
+    if (!ent || !profile) return false;
+    if (String(ent.user_id) !== String(profile.id)) return false;
+    if (ent.status !== 'active' && profile.role !== 'admin') return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (ent.expires_at <= nowSec) {
+      console.warn('[Entitlement Expired]');
+      return false;
+    }
+    if (!ent.signature || ent.signature.length !== 64) return false;
+
+    try {
+      const salt = 'mm_sec_entitlement_v64_salt_prod_90d';
+      const payload = `${ent.user_id}:${ent.email}:${ent.role}:${ent.status}:${ent.expires_at}:${salt}`;
+      const enc = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(payload));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const expectedSig = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return expectedSig === ent.signature;
+    } catch (e) {
+      console.warn('[Entitlement Crypto Check]', e);
+      return false;
+    }
+  },
+
   hasActiveAccess() {
     if (!this.userProfile) return false;
-    if (this.userProfile.role === 'admin') return true;
-    if (this.userProfile.status === 'active') return true;
+    if (this.userProfile.role === 'admin' && this.userProfile.status === 'active') return true;
+    if (this._isEntitlementVerified === true) {
+      try {
+        const entStr = localStorage.getItem('mm_entitlement');
+        if (!entStr) return false;
+        const ent = JSON.parse(entStr);
+        if (ent.expires_at <= Math.floor(Date.now() / 1000)) return false;
+        if (ent.status !== 'active') return false;
+        if (String(ent.user_id) !== String(this.userProfile.id)) return false;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
     return false;
   },
 
@@ -72,13 +111,20 @@ window.App = {
   },
 
   async checkAuth() {
-    // 1. Restore cached offline profile first
+    // 1. Restore cached offline profile & entitlement first
     try {
       const cached = localStorage.getItem('mm_user_profile');
-      if (cached) {
+      const cachedEnt = localStorage.getItem('mm_entitlement');
+      if (cached && cachedEnt) {
         this.userProfile = JSON.parse(cached);
+        const ent = JSON.parse(cachedEnt);
+        this._isEntitlementVerified = await this.verifyEntitlementOffline(ent, this.userProfile);
+      } else {
+        this._isEntitlementVerified = false;
       }
-    } catch (e) {}
+    } catch (e) {
+      this._isEntitlementVerified = false;
+    }
 
     // 2. Synchronize with server if online
     if (window.API.getToken()) {
@@ -90,6 +136,10 @@ window.App = {
         this.userProfile = res.data.user;
         try {
           localStorage.setItem('mm_user_profile', JSON.stringify(this.userProfile));
+          if (res.data.entitlement) {
+            localStorage.setItem('mm_entitlement', JSON.stringify(res.data.entitlement));
+            this._isEntitlementVerified = await this.verifyEntitlementOffline(res.data.entitlement, this.userProfile);
+          }
         } catch (e) {}
         // Try to fetch protected curriculum from server
         const currRes = await window.API.fetchCurriculum();
@@ -103,7 +153,11 @@ window.App = {
         // Token explicitly revoked by server
         window.API.logout();
         this.userProfile = null;
-        localStorage.removeItem('mm_user_profile');
+        this._isEntitlementVerified = false;
+        try {
+          localStorage.removeItem('mm_user_profile');
+          localStorage.removeItem('mm_entitlement');
+        } catch (e) {}
       } else {
         // Offline / Network unreachable: Keep offline session intact!
         console.log('[Offline] Network unreachable. Offline study mode active.');
@@ -2096,6 +2150,10 @@ window.App = {
       alert('1 удаагийн нэвтрэх кодоо оруулна уу.');
       return;
     }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      alert('Код баталгаажуулахад интернэт шаардлагатай. Та интернэт холболтоо шалгаад дахин оролдоно уу.');
+      return;
+    }
     const btn = document.querySelector('button[onclick="App.submitProfileCode()"]');
     if (btn) {
       btn.disabled = true;
@@ -2109,26 +2167,8 @@ window.App = {
         this.navigate('lessons-list');
       } else {
         if (!navigator.onLine || res.status === 0 || (res.data && res.data.error === 'network_error')) {
-          const masterCodes = ['123456', '778899', '999999', '202611', '112233', '888888'];
-          if (masterCodes.includes(code) || /^[0-9]{6}$/.test(code)) {
-            const offlineUser = {
-              id: 'offline_' + Date.now(),
-              name: 'Суралцагч',
-              role: 'student',
-              status: 'active',
-              plan: 'paid',
-              access_code: code,
-              offline_activated: true
-            };
-            this.userProfile = offlineUser;
-            try {
-              localStorage.setItem('mm_user_profile', JSON.stringify(offlineUser));
-              localStorage.setItem('mm_auth_token', 'offline_' + code);
-            } catch (e) {}
-            alert('🎉 Офлайн горимд 90 өдрийн хичээлийн эрх амжилттай нээгдлээ!');
-            this.navigate('lessons-list');
-            return;
-          }
+          alert('Код баталгаажуулахад интернэт шаардлагатай. Та интернэт холболтоо шалгаад дахин оролдоно уу.');
+          return;
         }
         alert(res.data.message || 'Код буруу байна.');
       }
@@ -2499,6 +2539,11 @@ window.App = {
       return;
     }
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      alert('Код баталгаажуулахад интернэт шаардлагатай. Та интернэт холболтоо шалгаад дахин оролдоно уу.');
+      return;
+    }
+
     const originalText = submitBtn ? submitBtn.innerHTML : '';
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -2513,29 +2558,9 @@ window.App = {
         alert(`🎉 Баяр хүргэе, ${name}! 90 өдрийн хичээл амжилттай нээгдлээ.`);
         this.navigate('lessons-list');
       } else {
-        // Offline Fallback: If device is offline or network fails, activate locally!
         if (!navigator.onLine || res.status === 0 || (res.data && res.data.error === 'network_error')) {
-          const masterCodes = ['123456', '778899', '999999', '202611', '112233', '888888'];
-          if (masterCodes.includes(code) || /^[0-9]{6}$/.test(code)) {
-            const offlineUser = {
-              id: 'offline_' + Date.now(),
-              name: name,
-              role: 'student',
-              status: 'active',
-              plan: 'paid',
-              access_code: code,
-              offline_activated: true
-            };
-            this.userProfile = offlineUser;
-            try {
-              localStorage.setItem('mm_user_profile', JSON.stringify(offlineUser));
-              localStorage.setItem('mm_auth_token', 'offline_' + code);
-            } catch (e) {}
-            this.closeModal();
-            alert(`🎉 Баяр хүргэе, ${name}! Офлайн горимд 90 өдрийн сургалт амжилттай нээгдлээ.`);
-            this.navigate('lessons-list');
-            return;
-          }
+          alert('Код баталгаажуулахад интернэт шаардлагатай. Та интернэт холболтоо шалгаад дахин оролдоно уу.');
+          return;
         }
         alert(res.data.message || 'Код буруу байна эсвэл өмнө нь ашиглагдсан байна.');
       }

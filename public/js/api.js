@@ -87,6 +87,12 @@ window.API = {
     });
     if (res.ok && res.data.token) {
       this.setToken(res.data.token);
+      if (res.data.user) {
+        try { localStorage.setItem('mm_user_profile', JSON.stringify(res.data.user)); } catch (e) {}
+      }
+      if (res.data.entitlement) {
+        try { localStorage.setItem('mm_entitlement', JSON.stringify(res.data.entitlement)); } catch (e) {}
+      }
     }
     return res;
   },
@@ -100,6 +106,12 @@ window.API = {
     });
     if (res.ok && res.data.token) {
       this.setToken(res.data.token);
+      if (res.data.user) {
+        try { localStorage.setItem('mm_user_profile', JSON.stringify(res.data.user)); } catch (e) {}
+      }
+      if (res.data.entitlement) {
+        try { localStorage.setItem('mm_entitlement', JSON.stringify(res.data.entitlement)); } catch (e) {}
+      }
     }
     return res;
   },
@@ -117,6 +129,12 @@ window.API = {
     });
     if (res.ok && res.data.token) {
       this.setToken(res.data.token);
+      if (res.data.user) {
+        try { localStorage.setItem('mm_user_profile', JSON.stringify(res.data.user)); } catch (e) {}
+      }
+      if (res.data.entitlement) {
+        try { localStorage.setItem('mm_entitlement', JSON.stringify(res.data.entitlement)); } catch (e) {}
+      }
     }
     return res;
   },
@@ -127,6 +145,10 @@ window.API = {
 
   async logout() {
     this.setToken('');
+    try {
+      localStorage.removeItem('mm_user_profile');
+      localStorage.removeItem('mm_entitlement');
+    } catch (e) {}
     return { ok: true };
   },
 
