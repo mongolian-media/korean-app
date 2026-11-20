@@ -28,6 +28,11 @@ window.PWA = {
         console.log('[PWA] Service Worker is active and offline cache is ready!');
         this.showOfflineReadyBadge();
       }).catch(() => {});
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[PWA] New Service Worker took control!');
+        this.showOfflineReadyBadge();
+      });
     }
   },
 
