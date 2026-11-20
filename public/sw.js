@@ -1,7 +1,7 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v63)
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v64)
 // Built strictly on drive.uugiscar.com offline architecture with Safari 206 Audio Range support
 
-const VERSION = 'v63';
+const VERSION = 'v64';
 const SHELL_CACHE = `shell-${VERSION}`;
 const IMAGE_CACHE = 'images-v2';
 const AUDIO_CACHE = 'mm-korean-audio-v1';
@@ -170,17 +170,22 @@ async function handleAudioRequest(request) {
     cachedResponse = await cache.match(request);
   }
 
-  // 2. If not cached and online, fetch from network and store in audio cache
+  // 2. If not cached and online, fetch complete audio from network without Range header
   if (!cachedResponse) {
     try {
-      const netRes = await fetch(request);
-      if (netRes && (netRes.ok || netRes.status === 206)) {
-        if (netRes.status === 200) {
-          cache.put(cacheKey, netRes.clone()).catch(() => {});
-        }
+      const cleanUrl = url.pathname + url.search;
+      const netRes = await fetch(cleanUrl, {
+        headers: { 'Accept': 'audio/mpeg' }
+      });
+      if (netRes && netRes.ok) {
+        await cache.put(cacheKey, netRes.clone());
         cachedResponse = netRes;
       } else {
-        return netRes;
+        return netRes || new Response('Audio not available offline', {
+          status: 404,
+          statusText: 'Not Found',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
       }
     } catch (e) {
       return new Response('Audio not available offline', {
