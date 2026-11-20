@@ -437,7 +437,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(sw_bytes)
                 return
 
-        # 1.2 Web App Manifest: always fresh with CORS
+        # 1.2 Web App Manifest: public cache with revalidate
         if path == '/manifest.json':
             man_path = os.path.join(PUBLIC_DIR, 'manifest.json')
             if os.path.exists(man_path):
@@ -446,13 +446,14 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
-                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
+                self.send_header('ETag', '"v43-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
                 return
 
-        # 1.3 HTML App Shell: never store in browser HTTP cache so new icons/versions take effect
+        # 1.3 HTML App Shell: Cache-Control enables iOS Safari to open index.html immediately from disk when cold-started offline
         if path in ['/', '/index.html']:
             idx_path = os.path.join(PUBLIC_DIR, 'index.html')
             if os.path.exists(idx_path):
@@ -461,9 +462,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
-                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-                self.send_header('Pragma', 'no-cache')
-                self.send_header('Expires', '0')
+                self.send_header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
+                self.send_header('ETag', '"v43-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
