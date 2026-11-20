@@ -383,6 +383,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', ctype)
             self.send_header('Content-Length', str(os.path.getsize(target_path)))
             self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'public, max-age=86400')
             self.end_headers()
             return
         self.send_response(200)
@@ -398,6 +399,56 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         # 1. API Endpoints
         if path.startswith('/api/'):
             return self.handle_api_get(path, query)
+
+        # 1.1 Service Worker: ALWAYS serve fresh with no-cache so browsers install updates immediately
+        if path == '/sw.js':
+            sw_path = os.path.join(PUBLIC_DIR, 'sw.js')
+            if os.path.exists(sw_path):
+                with open(sw_path, 'rb') as sw_f:
+                    sw_bytes = sw_f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/javascript; charset=utf-8')
+                self.send_header('Content-Length', str(len(sw_bytes)))
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                self.send_header('Pragma', 'no-cache')
+                self.send_header('Expires', '0')
+                self.send_header('Service-Worker-Allowed', '/')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(sw_bytes)
+                return
+
+        # 1.2 Web App Manifest: always fresh with CORS
+        if path == '/manifest.json':
+            man_path = os.path.join(PUBLIC_DIR, 'manifest.json')
+            if os.path.exists(man_path):
+                with open(man_path, 'rb') as man_f:
+                    man_bytes = man_f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
+                self.send_header('Content-Length', str(len(man_bytes)))
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(man_bytes)
+                return
+
+        # 1.3 HTML App Shell: never store in browser HTTP cache so new icons/versions take effect
+        if path in ['/', '/index.html']:
+            idx_path = os.path.join(PUBLIC_DIR, 'index.html')
+            if os.path.exists(idx_path):
+                with open(idx_path, 'rb') as idx_f:
+                    idx_bytes = idx_f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(idx_bytes)))
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                self.send_header('Pragma', 'no-cache')
+                self.send_header('Expires', '0')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(idx_bytes)
+                return
 
         # 1.5 Handle root & asset icon requests directly with proper MIME types
         icon_names = [
