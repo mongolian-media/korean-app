@@ -11,6 +11,7 @@ window.App = {
   userProfile: null,
   curriculum: null,
   alphabet: null,
+  currentLevelTab: 1, // 1: Days 1-30, 2: Days 31-60, 3: Days 61-90
   vocabTab: 'all', // 'all', 'sentences', 'bookmarked'
   vocabSearchQuery: '',
   vocabDayFilter: 'all',
@@ -184,7 +185,8 @@ window.App = {
     const completedCount = state.completedDays.length;
     const streakCount = (state.streak && state.streak.count) || 1;
     const vocabCount = (state.bookmarkedVocab && state.bookmarkedVocab.length) || 0;
-    const progressPercent = Math.round((completedCount / 30) * 100);
+    const totalDaysCount = (this.curriculum && this.curriculum.length) || (window.CURRICULUM_DATA && window.CURRICULUM_DATA.length) || 90;
+    const progressPercent = Math.round((completedCount / totalDaysCount) * 100);
 
     const activeDayId = state.activeDay || 1;
     const dayData = this.curriculum ? this.curriculum.find(d => d.id === activeDayId) : null;
@@ -234,7 +236,7 @@ window.App = {
         <div class="stats-grid">
           <div class="stat-chip">
             <div class="chip-icon">📅</div>
-            <div class="chip-val">${completedCount} / 30</div>
+            <div class="chip-val">${completedCount} / ${totalDaysCount}</div>
             <div class="chip-label">Өдөр</div>
           </div>
           <div class="stat-chip">
@@ -268,13 +270,13 @@ window.App = {
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
         </div>
 
-        <!-- 30-Day Quick Roadmap Shortcut -->
+        <!-- 90-Day Quick Roadmap Shortcut -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('lessons-list')">
           <div style="display: flex; align-items: center; gap: 14px;">
             <span style="font-size: 28px;">📚</span>
             <div>
-              <strong style="display: block; font-size: 15px;">30 Өдрийн хөтөлбөр (300 Өгүүлбэр)</strong>
-              <span style="font-size: 12px; color: var(--text-muted);">Ажил ба өдөр тутмын 30 сэдэвчилсэн модуль</span>
+              <strong style="display: block; font-size: 15px;">90 Өдрийн хөтөлбөр (3 шат, 900 Өгүүлбэр)</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">🌟 1-р шат (1–30) • 🚀 2-р шат (31–60) • 👑 3-р шат (61–90)</span>
             </div>
           </div>
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
@@ -568,35 +570,88 @@ window.App = {
   },
 
   // =============================================================
-  // 3. 30-DAY LESSONS LIST
+  // 3. 90-DAY LESSONS LIST & 3-LEVEL CURRICULUM
   // =============================================================
+  setLevelTab(lvl) {
+    this.currentLevelTab = lvl;
+    const container = document.getElementById('main-content');
+    if (container) this.renderDaysList(container);
+  },
+
   renderDaysList(container) {
     const state = window.StorageManager.get();
     const curr = this.curriculum || window.CURRICULUM_DATA || [];
     const hasAccess = this.hasActiveAccess();
+
+    if (!this.currentLevelTab) {
+      const activeId = state.activeDay || 1;
+      this.currentLevelTab = activeId <= 30 ? 1 : (activeId <= 60 ? 2 : 3);
+    }
+
+    const lvl = this.currentLevelTab;
+    const levelDays = curr.filter(d => (d.level === lvl) || (!d.level && ((lvl === 1 && d.id <= 30) || (lvl === 2 && d.id > 30 && d.id <= 60) || (lvl === 3 && d.id > 60))));
+
+    const levelInfo = {
+      1: {
+        badge: "🌟 1-Р ШАТ (АНХАН)",
+        title: "1-р Шат: Анхан шат (Суурь өдөр тутмын яриа)",
+        desc: "1–30 дахь өдөр: Мэндчилгээ, танилцах, дэлгүүр, тээвэр, ресторан, эмнэлэг, суурь харилцан яриа (300 өгүүлбэр)."
+      },
+      2: {
+        badge: "🚀 2-Р ШАТ (ДУНД)",
+        title: "2-р Шат: Дунд шат (Ажил амьдрал, өдөр тутмын яриа)",
+        desc: "31–60 дахь өдөр: Ажлын зааварчилгаа, үйлдвэр, агуулах, барилга, илүү цаг, амралт, цалингийн задаргаа (300 өгүүлбэр)."
+      },
+      3: {
+        badge: "👑 3-Р ШАТ (ГҮНЗГИЙ)",
+        title: "3-р Шат: Гүнзгий шат (Албан харилцаа, гэрээ, мэргэжил)",
+        desc: "61–90 дэх өдөр: Хөдөлмөрийн гэрээ, виз сунгах, ослын даатгал, банкны шилжүүлэг, бизнес имэйл, төгсөлт (300 өгүүлбэр)."
+      }
+    }[lvl] || {
+      badge: "📚 СУРГАЛТ",
+      title: "Солонгос хэлний сургалт",
+      desc: "Өдөр бүр бодит 10 өгүүлбэр суралцах систем"
+    };
 
     container.innerHTML = `
       <div class="fade-in">
         <div class="glass-card">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <button class="btn-glass" onclick="App.navigate('home')">← Буцах</button>
-            <span class="sentence-badge">Нийт 30 өдөр (300 Өгүүлбэр)</span>
+            <span class="sentence-badge">Нийт 90 өдөр (900 Өгүүлбэр)</span>
           </div>
           <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Хичээлийн агуулгын жагсаалт</h2>
-          <p style="font-size: 13px; color: var(--text-muted);">
-            ${hasAccess ? '✅ Таны 30 өдрийн бүтэн эрх идэвхтэй байна.' : '🔒 1-р хичээл нээлттэй, 2–30 дахь өдөр төлбөр/зөвшөөрлөөр нээгдэнэ.'}
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            ${hasAccess ? '✅ Таны 90 өдрийн бүтэн эрх идэвхтэй байна.' : '🔒 1-р хичээл нээлттэй, 2–90 дэх өдөр төлбөр/зөвшөөрлөөр нээгдэнэ.'}
           </p>
+
+          <!-- 3 Level Tabs -->
+          <div class="segmented-pills" style="margin-top: 10px; margin-bottom: 4px; overflow-x: auto;">
+            <button class="pill-btn ${lvl === 1 ? 'active' : ''}" onclick="App.setLevelTab(1)">🌟 1-р Шат (1–30)</button>
+            <button class="pill-btn ${lvl === 2 ? 'active' : ''}" onclick="App.setLevelTab(2)">🚀 2-р Шат (31–60)</button>
+            <button class="pill-btn ${lvl === 3 ? 'active' : ''}" onclick="App.setLevelTab(3)">👑 3-р Шат (61–90)</button>
+          </div>
+        </div>
+
+        <!-- Level Context Info Card -->
+        <div class="glass-card" style="padding: 14px 18px; border-left: 4px solid var(--brand-blue); margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span class="sentence-badge" style="background: rgba(37,99,235,0.12); color: var(--brand-blue); font-weight: 800;">${levelInfo.badge}</span>
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">30 хичээл • 300 өгүүлбэр</span>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin: 6px 0 4px;">${levelInfo.title}</h3>
+          <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">${levelInfo.desc}</p>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          ${curr.map(day => {
+          ${levelDays.map(day => {
             const isDone = state.completedDays.includes(day.id);
             const isCurrent = state.activeDay === day.id;
             const isLocked = day.id > 1 && !hasAccess;
             return `
               <div class="glass-card" style="padding: 16px 18px; cursor: pointer; border-left: 4px solid ${isLocked ? '#f59e0b' : (isDone ? '#10b981' : (isCurrent ? '#2563eb' : 'var(--glass-border)'))}; opacity: ${isLocked ? '0.85' : '1'};" onclick="App.openDay(${day.id})">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 12px; font-weight: 700; color: ${isLocked ? '#d97706' : 'var(--brand-blue)'};">${day.title}</span>
+                  <span style="font-size: 12px; font-weight: 700; color: ${isLocked ? '#d97706' : 'var(--brand-blue)'};">${day.id}-р өдөр: ${day.title}</span>
                   <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.4);">${isLocked ? '🔒 Түгжээтэй' : day.workplaceRatio}</span>
                 </div>
                 <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">${day.subtitle}</h4>
@@ -623,7 +678,7 @@ window.App = {
             <span style="font-size: 40px;">🔒</span>
             <h4 style="margin: 8px 0; color: var(--text-main); font-size: 16px;">${dayId}-р өдрийн хичээл түгжээтэй байна</h4>
             <p style="font-size: 13px; color: var(--text-muted);">
-              30 өдрийн бүтэн сургалтад нэвтрэхийн тулд өөрийн бүртгэлтэй имэйлээр нэвтэрнэ үү. (1-р өдөр болон Хангыл үсэг бүх хүнд нээлттэй).
+              90 өдрийн (3 шат) бүтэн сургалтад нэвтрэхийн тулд өөрийн бүртгэлтэй имэйлээр нэвтэрнэ үү. (1-р өдөр болон Хангыл үсэг бүх хүнд нээлттэй).
             </p>
           </div>
         `);
@@ -685,7 +740,7 @@ window.App = {
     }
 
     const curr = this.curriculum || window.CURRICULUM_DATA || [];
-    const day = curr.find(d => d.id === dayId) || curr[0];
+    const day = curr.find(d => d.id === dayId || d.day === dayId) || curr[0];
     if (!day) return;
 
     const state = window.StorageManager.get();
@@ -705,10 +760,10 @@ window.App = {
         <!-- Top Day Header -->
         <div class="glass-card" style="padding: 16px 20px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-            <button class="btn-glass" onclick="App.navigate('lessons-list')">← 30 Өдөр</button>
+            <button class="btn-glass" onclick="App.navigate('lessons-list')">← Хичээлийн жагсаалт</button>
             <div style="display: flex; gap: 6px; align-items: center;">
               ${dayId > 1 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId - 1})">← ${dayId - 1}-р өдөр</button>` : ''}
-              ${dayId < 30 ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId + 1})">${dayId + 1}-р өдөр ➔</button>` : ''}
+              ${dayId < (curr.length || 90) ? `<button class="btn-glass" style="padding: 4px 10px; font-size: 12px; font-weight: 700;" onclick="App.openDay(${dayId + 1})">${dayId + 1}-р өдөр ➔</button>` : ''}
             </div>
             <span class="sentence-badge">${day.category}</span>
           </div>
@@ -1560,11 +1615,11 @@ window.App = {
         <div class="glass-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span class="sentence-badge">Солонгос хэлний үгийн сан</span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--brand-blue);">30 өдөр • 300 өгүүлбэр</span>
+            <span style="font-size: 12px; font-weight: 700; color: var(--brand-blue);">90 өдөр • 900 өгүүлбэр</span>
           </div>
-          <h2 style="font-size: 20px; font-weight: 800; margin: 6px 0 4px;">📚 300 Өгүүлбэрийн Нийт Үгийн Сан</h2>
+          <h2 style="font-size: 20px; font-weight: 800; margin: 6px 0 4px;">📚 900 Өгүүлбэрийн Нийт Үгийн Сан</h2>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-            Хичээлийн бүх 300 өгүүлбэрт орсон бодит амьдралын үг хэллэгүүд. Үг бүрийн ард байрлах <b>🔊 Сонсох</b> товчийг дарж солонгос дуудлагыг нь сонсоорой.
+            Хичээлийн бүх 900 өгүүлбэрт орсон бодит амьдралын үг хэллэгүүд. Үг бүрийн ард байрлах <b>🔊 Сонсох</b> товчийг дарж солонгос дуудлагыг нь сонсоорой.
           </p>
 
           <!-- Tab Navigation -->
@@ -1597,7 +1652,7 @@ window.App = {
             <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 100%; min-width: 0;">
               <label for="vocab-day-select" style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Өдрөөр шүүх:</label>
               <select id="vocab-day-select" onchange="App.onVocabDayFilter(this.value)" style="flex: 1; min-width: 0; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; color: var(--text-main); outline: none;">
-                <option value="all" ${dayFilter === 'all' ? 'selected' : ''}>Бүх 30 өдрийн хичээл</option>
+                <option value="all" ${dayFilter === 'all' ? 'selected' : ''}>Бүх 90 өдрийн хичээл</option>
                 ${curr.map(d => `<option value="${d.id}" ${dayFilter == d.id ? 'selected' : ''}>${d.id}-р өдөр: ${d.title}</option>`).join('')}
               </select>
             </div>
@@ -1789,7 +1844,7 @@ window.App = {
           ${user ? `
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <span class="sentence-badge" style="background: #10b981; color: #fff;">
-                ✅ Идэвхтэй эрх (30 өдөр нээлттэй)
+                ✅ Идэвхтэй эрх (90 өдөр нээлттэй)
               </span>
               ${user.role === 'admin' ? `
                 <span class="sentence-badge" style="background: var(--brand-blue); color: #fff;">👑 Системийн админ (Эзэн)</span>
@@ -1804,10 +1859,10 @@ window.App = {
         ${!user ? `
           <!-- Quick Code Entry for Guests -->
           <div class="glass-card">
-            <h4 style="margin-bottom: 8px;">🔑 1 удаагийн кодоо идэвхжүүлэх</h4>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Батцогтоос авсан 1 удаагийн нэвтрэх кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
+            <h4 style="margin-bottom: 8px;">🔑 1 удаагийн 6 оронтой кодоо идэвхжүүлэх</h4>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Батцогтоос авсан 6 оронтой тоон кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
             <div style="display: flex; gap: 8px;">
-              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="profile-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="profile-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 4px; font-size: 18px; text-align: center;">
               <button class="btn-primary" style="width: auto; padding: 10px 18px;" onclick="App.submitProfileCode()">Нэвтрэх</button>
             </div>
           </div>
@@ -1916,7 +1971,7 @@ window.App = {
     const res = await window.API.codeLogin('Суралцагч', code);
     if (res.ok) {
       await this.checkAuth();
-      alert('🎉 30 өдрийн хичээлийн эрх амжилттай нээгдлээ!');
+      alert('🎉 90 өдрийн хичээлийн эрх амжилттай нээгдлээ!');
       this.navigate('lessons-list');
     } else {
       alert(res.data.message || 'Код буруу байна.');
@@ -2145,11 +2200,11 @@ window.App = {
   },
 
   copyInviteCode(code) {
-    const origin = window.location.origin || 'http://172.20.10.5';
-    const textToCopy = `Сайн байна уу? "MONGOLIAN MEDIA" Солонгос хэлний 30 өдрийн сургалтын системд тавтай морил! 🇲🇳🇰🇷\n\n📲 1. Апп холбоос:\n${origin}/\n\n🎟️ 2. Таны нэвтрэх 1 удаагийн код:\n${code}\n\n📝 3. Нэвтрэх заавар:\n• Дээрх холбоосоор орно.\n• Өөрийн нэр болон энэ 1 удаагийн кодыг оруулж нэвтэрнэ.\n• Нэвтэрсний дараа хөтчийнхөө "Нүүр дэлгэцэнд нэмэх" (Add to Home Screen) дарж суулгавал интернетгүй оффлайн үед ч шууд ажиллана!`;
+    const origin = window.location.origin || 'https://korean-app-ny1w.onrender.com';
+    const textToCopy = `Сайн байна уу? "MONGOLIAN MEDIA" Солонгос хэлний 90 өдрийн сургалтын системд тавтай морил! 🇲🇳🇰🇷\n\n📲 1. Апп холбоос:\n${origin}/\n\n🎟️ 2. Таны 1 удаагийн 6 оронтой нэвтрэх код:\n${code}\n\n📝 3. Нэвтрэх заавар:\n• Дээрх холбоосоор орно.\n• Өөрийн нэр болон энэхүү 6 оронтой тоон кодоо оруулж нэвтэрнэ.\n• Нэвтэрсний дараа "Дэлгэцэнд нэмэх" (Add to Home Screen) хийж суулгавал интернетгүй оффлайн үед ч шууд ажиллана!`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(textToCopy).then(() => {
-        alert(`📋 Бэлэн мессеж санах ойд хуулагдлаа!\n\nХолбоос: ${origin}/\nКод: ${code}\n\nТа одоо чат руугаа ороод шууд Paste (Ctrl+V) хийгээд илгээж болно.`);
+        alert(`📋 Бэлэн мессеж санах ойд хуулагдлаа!\n\nХолбоос: ${origin}/\n6 оронтой код: ${code}\n\nТа одоо чат руугаа ороод шууд Paste (Ctrl+V) хийгээд илгээж болно.`);
       }).catch(() => {
         prompt("Мессежийг хуулж авна уу:", textToCopy);
       });
@@ -2240,10 +2295,10 @@ window.App = {
         </div>
 
         <div class="form-group" style="margin-bottom: 18px;">
-          <label class="form-label">🔑 1 удаагийн нэвтрэх код:</label>
+          <label class="form-label">🔑 1 удаагийн 6 оронтой нэвтрэх код:</label>
           <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
           <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
-            *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Батцогтоос кодоо авна уу).*
+            *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Батцогтоос 6 оронтой тоон кодоо авна уу).*
           </span>
         </div>
 
@@ -2285,7 +2340,7 @@ window.App = {
     if (res.ok && res.data.user) {
       this.closeModal();
       await this.checkAuth();
-      alert(`🎉 Баяр хүргэе, ${name}! 30 өдрийн хичээл амжилттай нээгдлээ.`);
+      alert(`🎉 Баяр хүргэе, ${name}! 90 өдрийн хичээл амжилттай нээгдлээ.`);
       this.navigate('lessons-list');
     } else {
       alert(res.data.message || 'Код буруу байна эсвэл өмнө нь ашиглагдсан байна.');
