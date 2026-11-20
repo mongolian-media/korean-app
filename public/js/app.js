@@ -2021,13 +2021,25 @@ window.App = {
       alert('1 удаагийн нэвтрэх кодоо оруулна уу.');
       return;
     }
-    const res = await window.API.codeLogin('Суралцагч', code);
-    if (res.ok) {
-      await this.checkAuth();
-      alert('🎉 90 өдрийн хичээлийн эрх амжилттай нээгдлээ!');
-      this.navigate('lessons-list');
-    } else {
-      alert(res.data.message || 'Код буруу байна.');
+    const btn = document.querySelector('button[onclick="App.submitProfileCode()"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = '⏳ Холбогдож байна...';
+    }
+    try {
+      const res = await window.API.codeLogin('Суралцагч', code);
+      if (res.ok) {
+        await this.checkAuth();
+        alert('🎉 90 өдрийн хичээлийн эрх амжилттай нээгдлээ!');
+        this.navigate('lessons-list');
+      } else {
+        alert(res.data.message || 'Код буруу байна.');
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = '🚀 Сургалтын эрх нээх';
+      }
     }
   },
 
@@ -2374,6 +2386,7 @@ window.App = {
   async submitCodeLogin() {
     const nameInput = document.getElementById('login-student-name');
     const codeInput = document.getElementById('login-access-code');
+    const submitBtn = document.querySelector('#modal-container button.btn-primary');
     const name = nameInput ? nameInput.value.trim() : '';
     const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
 
@@ -2389,14 +2402,27 @@ window.App = {
       return;
     }
 
-    const res = await window.API.codeLogin(name, code);
-    if (res.ok && res.data.user) {
-      this.closeModal();
-      await this.checkAuth();
-      alert(`🎉 Баяр хүргэе, ${name}! 90 өдрийн хичээл амжилттай нээгдлээ.`);
-      this.navigate('lessons-list');
-    } else {
-      alert(res.data.message || 'Код буруу байна эсвэл өмнө нь ашиглагдсан байна.');
+    const originalText = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '⏳ Сервер холбогдож байна...';
+    }
+
+    try {
+      const res = await window.API.codeLogin(name, code);
+      if (res.ok && res.data.user) {
+        this.closeModal();
+        await this.checkAuth();
+        alert(`🎉 Баяр хүргэе, ${name}! 90 өдрийн хичээл амжилттай нээгдлээ.`);
+        this.navigate('lessons-list');
+      } else {
+        alert(res.data.message || 'Код буруу байна эсвэл өмнө нь ашиглагдсан байна.');
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText || 'Нэвтрэх ба Хичээл эхлэх ➔';
+      }
     }
   },
 

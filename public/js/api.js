@@ -32,7 +32,7 @@ window.API = {
     }
   },
 
-  async request(endpoint, method = 'GET', body = null) {
+  async request(endpoint, method = 'GET', body = null, retries = 2) {
     const headers = {
       'Content-Type': 'application/json',
       'X-Device-ID': this.getDeviceId()
@@ -47,19 +47,33 @@ window.API = {
       opts.body = JSON.stringify(body);
     }
 
-    try {
-      const res = await fetch(`${this.baseUrl}${endpoint}`, opts);
-      const text = await res.text();
-      let data = {};
+    for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        data = { message: text || `Серверийн хариу: ${res.status}` };
+        const res = await fetch(`${this.baseUrl}${endpoint}`, opts);
+        const text = await res.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          data = { message: text || `Серверийн хариу: ${res.status}` };
+        }
+        return { ok: res.ok, status: res.status, data };
+      } catch (err) {
+        console.warn(`[API Error - Оролдлого ${attempt + 1}]`, endpoint, err);
+        if (attempt < retries) {
+          // Wait 2.5 seconds before retrying (Render cold start handling)
+          await new Promise(r => setTimeout(r, 2500));
+          continue;
+        }
+        return {
+          ok: false,
+          status: 0,
+          data: {
+            error: 'network_error',
+            message: 'Сервер холбогдож байна (сервер түр унтсан байж магадгүй). 5-10 секундын дараа дахин оролдоно уу.'
+          }
+        };
       }
-      return { ok: res.ok, status: res.status, data };
-    } catch (err) {
-      console.warn('[API Error]', endpoint, err);
-      return { ok: false, status: 0, data: { error: 'network_error', message: 'Сүлжээний холболт саатлаа. Холболтоо шалгана уу.' } };
     }
   },
 
