@@ -2,7 +2,7 @@
   "name": "MONGOLIAN MEDIA — Солонгос хэлний сургалт",
   "short_name": "Солонгос Яриа",
   "description": "Монгол хүнд зориулсан Солонгос хэлний 30 өдрийн яриа, үсгийн бэлтгэл, сүүдэрлэх дасгалжуулагч апп",
-  "start_url": "/index.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
