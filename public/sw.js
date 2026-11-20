@@ -1,25 +1,23 @@
 // MONGOLIAN MEDIA — Service Worker (iOS Safari & Android PWA Hardened)
-// Cache version: mm-korean-v41
-const CACHE_NAME = 'mm-korean-v41';
+// Cache version: mm-korean-v43
+const CACHE_NAME = 'mm-korean-v43';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/css/glassmorphism.css?v=20',
+  '/js/api.js?v=43',
+  '/js/speech_engine.js?v=43',
+  '/js/storage_manager.js?v=43',
+  '/js/alphabet_data.js?v=43',
+  '/js/curriculum_data.js?v=43',
+  '/js/pwa.js?v=43',
+  '/js/app.js?v=43',
   '/apple-touch-icon.png',
-  '/apple-touch-icon-precomposed.png',
-  '/app-icon.png',
+  '/apple-touch-icon-180x180.png',
   '/app-icon-192.png',
   '/app-icon-512.png',
-  '/mascot-icon-v1.png',
   '/favicon.ico',
-  '/css/glassmorphism.css',
-  '/js/api.js',
-  '/js/speech_engine.js',
-  '/js/storage_manager.js',
-  '/js/alphabet_data.js',
-  '/js/curriculum_data.js',
-  '/js/pwa.js',
-  '/js/app.js',
   '/assets/logo.jpg'
 ];
 
@@ -37,27 +35,34 @@ function cleanResponse(response) {
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('[SW v41] Installing & pre-caching all shell assets...');
-      for (const url of SHELL_ASSETS) {
-        try {
-          const res = await fetch(url, { cache: 'no-cache' });
-          if (res && res.status === 200) {
-            await cache.put(url, cleanResponse(res));
-          }
-        } catch (err) {
-          console.warn('[SW v41] Pre-cache fail for:', url, err);
-        }
-      }
-      // Guarantee /index.html and / are cached
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      console.log('[SW v42] Installing & pre-caching all shell assets...');
+      
+      // 1. Guarantee /index.html and / first
       try {
-        const indexRes = await fetch('/index.html', { cache: 'no-cache' });
+        const indexRes = await fetch('/index.html', { cache: 'reload' });
         if (indexRes && indexRes.status === 200) {
-          await cache.put('/index.html', cleanResponse(indexRes.clone()));
-          await cache.put('/', cleanResponse(indexRes.clone()));
+          const clean1 = cleanResponse(indexRes);
+          await cache.put('/index.html', clean1.clone());
+          await cache.put('/', clean1);
         }
       } catch (err) {}
-    })
+
+      // 2. Parallel pre-cache remaining assets
+      await Promise.allSettled(
+        SHELL_ASSETS.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'reload' });
+            if (res && res.status === 200) {
+              const clean = cleanResponse(res);
+              await cache.put(url, clean.clone());
+              await cache.put(url.split('?')[0], clean);
+            }
+          } catch (e) {}
+        })
+      );
+    })()
   );
 });
 
@@ -68,7 +73,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME) {
-            console.log('[SW v41] Purging outdated cache:', k);
+            console.log('[SW v42] Purging outdated cache:', k);
             return caches.delete(k);
           }
         })
@@ -131,7 +136,12 @@ self.addEventListener('fetch', (e) => {
         } catch (fetchErr) {
           const fallback = await cache.match('/index.html', { ignoreSearch: true }) || await cache.match('/', { ignoreSearch: true });
           if (fallback) return cleanResponse(fallback);
-          throw fetchErr;
+          
+          // Emergency offline HTML fallback so Safari NEVER displays a network error screen
+          return new Response(
+            `<!DOCTYPE html><html lang="mn"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>MONGOLIAN MEDIA</title><style>body{background:#090d16;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center;box-sizing:border-box;}h2{margin:0 0 10px 0;font-size:22px;color:#38bdf8;}p{color:#94a3b8;font-size:14px;max-width:320px;line-height:1.6;margin-bottom:24px;}button{background:#2563eb;color:#fff;border:none;padding:14px 28px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;}</style></head><body><div style="font-size:50px;margin-bottom:12px;">📚</div><h2>MONGOLIAN MEDIA</h2><p>Офлайн горим бэлтгэгдэж байна. Доорх товчийг дарж апп руугаа орно уу.</p><button onclick="window.location.reload()">🔄 Апп-ыг нээх</button></body></html>`,
+            { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+          );
         }
       })()
     );
