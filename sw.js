@@ -100,11 +100,9 @@ self.addEventListener('fetch', (e) => {
         const cache = await caches.open(CACHE_NAME);
 
         // 1. Check Cache FIRST (Essential for iOS Safari offline!)
-        let cached = await cache.match(e.request, { ignoreSearch: true });
-        if (!cached) {
-          cached = await cache.match('/index.html', { ignoreSearch: true })
-                || await cache.match('/', { ignoreSearch: true });
-        }
+        let cached = await cache.match('/index.html', { ignoreSearch: true })
+                  || await cache.match('/', { ignoreSearch: true })
+                  || await cache.match(e.request, { ignoreSearch: true });
 
         if (cached) {
           // If online, update cache in background (Stale While Revalidate)
