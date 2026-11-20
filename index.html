@@ -22,7 +22,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(function(r) { console.log('[SW Head Reg]', r.scope); if(r.update) r.update(); })
+        .then(function(r) { console.log('[SW Head Reg]', r.scope); })
         .catch(function(e) { console.warn('[SW Head Reg Err]', e); });
     }
   </script>
