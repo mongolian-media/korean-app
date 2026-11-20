@@ -1631,6 +1631,11 @@ window.App = {
       );
     }
 
+    const limit = this.vocabLimit || 60;
+    const isFiltered = dayFilter !== 'all' || query.length > 0;
+    const vocabToRender = isFiltered ? filteredVocab : filteredVocab.slice(0, limit);
+    const sentencesToRender = isFiltered ? filteredSentences : filteredSentences.slice(0, limit);
+
     container.innerHTML = `
       <div class="fade-in">
         <!-- Header Card -->
@@ -1681,19 +1686,20 @@ window.App = {
           ` : ''}
         </div>
 
-        <!-- Tab 1: All Vocabulary Words (400+) -->
+        <!-- Tab 1: All Vocabulary Words -->
         ${activeTab === 'all' ? `
-          <div style="margin-bottom: 12px; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 0 4px;">
-            Илэрц: <span style="color: var(--brand-blue);">${filteredVocab.length}</span> үг олдлоо
+          <div style="margin-bottom: 12px; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 0 4px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Илэрц: <span style="color: var(--brand-blue);">${filteredVocab.length}</span> үг олдлоо</span>
+            ${!isFiltered && filteredVocab.length > vocabToRender.length ? `<span style="font-size: 11px; color: var(--text-light);">(Эхний ${vocabToRender.length}-г харуулж байна)</span>` : ''}
           </div>
-          ${filteredVocab.length === 0 ? `
+          ${vocabToRender.length === 0 ? `
             <div class="glass-card" style="text-align: center; padding: 36px 16px;">
               <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
               <p style="color: var(--text-muted);">Таны хайсан илэрц олдсонгүй.</p>
             </div>
           ` : `
             <div style="display: flex; flex-direction: column; gap: 10px;">
-              ${filteredVocab.map(v => {
+              ${vocabToRender.map(v => {
                 const isBookmarked = window.StorageManager.isVocabBookmarked(state, v.ko);
                 return `
                   <div class="glass-card" style="padding: 14px 16px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-radius: 14px;">
@@ -1722,22 +1728,30 @@ window.App = {
                 `;
               }).join('')}
             </div>
+            ${!isFiltered && filteredVocab.length > vocabToRender.length ? `
+              <div style="text-align: center; margin: 18px 0 10px;">
+                <button class="btn-primary" onclick="App.loadMoreVocab()" style="width: auto; padding: 12px 28px; font-size: 14px; font-weight: 700; border-radius: 9999px;">
+                  Цааш үзэх (+60 үг нэмэх) ➔
+                </button>
+              </div>
+            ` : ''}
           `}
         ` : ''}
 
         <!-- Tab 2: 900 Full Sentences -->
         ${activeTab === 'sentences' ? `
-          <div style="margin-bottom: 12px; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 0 4px;">
-            Илэрц: <span style="color: var(--brand-blue);">${filteredSentences.length}</span> өгүүлбэр олдлоо
+          <div style="margin-bottom: 12px; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 0 4px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Илэрц: <span style="color: var(--brand-blue);">${filteredSentences.length}</span> өгүүлбэр олдлоо</span>
+            ${!isFiltered && filteredSentences.length > sentencesToRender.length ? `<span style="font-size: 11px; color: var(--text-light);">(Эхний ${sentencesToRender.length}-г харуулж байна)</span>` : ''}
           </div>
-          ${filteredSentences.length === 0 ? `
+          ${sentencesToRender.length === 0 ? `
             <div class="glass-card" style="text-align: center; padding: 36px 16px;">
               <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
               <p style="color: var(--text-muted);">Таны хайсан өгүүлбэр олдсонгүй.</p>
             </div>
           ` : `
             <div style="display: flex; flex-direction: column; gap: 10px;">
-              ${filteredSentences.map(s => {
+              ${sentencesToRender.map(s => {
                 const isBookmarked = window.StorageManager.isVocabBookmarked(state, s.ko);
                 return `
                   <div class="glass-card" style="padding: 14px 16px; margin-bottom: 0; border-radius: 14px;">
@@ -1750,7 +1764,7 @@ window.App = {
                     <div style="font-family: var(--font-korean); font-size: 17px; font-weight: 800; color: var(--text-main); margin-bottom: 3px;">${s.ko}</div>
                     <div style="font-size: 14px; font-weight: 600; color: var(--brand-blue); margin-bottom: 3px;">${s.mn}</div>
                     <div style="font-size: 12px; color: var(--text-muted); font-style: italic; margin-bottom: 10px;">Ойролцоо дуудлага: ${s.ro}</div>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                       <button class="btn-glass" style="padding: 5px 14px; font-size: 12px;" data-ko="${s.ko.replaceAll('"', '&quot;')}" onclick="window.SpeechEngine.speak(this.getAttribute('data-ko'))">
                         🔊 Сонсох
                       </button>
@@ -1765,6 +1779,13 @@ window.App = {
                 `;
               }).join('')}
             </div>
+            ${!isFiltered && filteredSentences.length > sentencesToRender.length ? `
+              <div style="text-align: center; margin: 18px 0 10px;">
+                <button class="btn-primary" onclick="App.loadMoreVocab()" style="width: auto; padding: 12px 28px; font-size: 14px; font-weight: 700; border-radius: 9999px;">
+                  Цааш үзэх (+60 өгүүлбэр нэмэх) ➔
+                </button>
+              </div>
+            ` : ''}
           `}
         ` : ''}
 
@@ -1805,13 +1826,22 @@ window.App = {
     `;
   },
 
+  vocabLimit: 60,
+
+  loadMoreVocab() {
+    this.vocabLimit = (this.vocabLimit || 60) + 60;
+    this.renderVocab(document.getElementById('main-content'));
+  },
+
   switchVocabTab(tabName) {
     this.vocabTab = tabName;
+    this.vocabLimit = 60;
     this.renderVocab(document.getElementById('main-content'));
   },
 
   onVocabSearch(query) {
     this.vocabSearchQuery = query;
+    this.vocabLimit = 60;
     this.renderVocab(document.getElementById('main-content'));
     const input = document.getElementById('vocab-search-input');
     if (input) {
@@ -1822,6 +1852,7 @@ window.App = {
 
   onVocabDayFilter(dayId) {
     this.vocabDayFilter = dayId;
+    this.vocabLimit = 60;
     this.renderVocab(document.getElementById('main-content'));
   },
 
