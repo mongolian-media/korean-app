@@ -84,42 +84,63 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-gradient);
-  background-attachment: fixed;
+  background: #090d16;
   color: var(--text-main);
   min-height: 100vh;
   width: 100%;
   max-width: 100vw;
-  padding-bottom: 90px; /* Space for bottom nav */
+  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
   transition: background 0.3s ease, color 0.3s ease;
   line-height: 1.5;
   overflow-x: hidden;
   position: relative;
 }
 
-/* Ambient Floating Glow Spheres for Glass Effect */
-.ambient-glow-1 {
+/* Atmospheric Sunset Rider Wallpaper Background */
+.app-wallpaper-container {
   position: fixed;
-  top: 120px;
-  right: -80px;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(37, 99, 235, 0.03) 70%, transparent 100%);
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   pointer-events: none;
   z-index: 0;
-  max-width: 100vw;
+}
+
+.app-wallpaper-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../assets/sunset_rider_bg.jpg');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  transform: translateZ(0);
+}
+
+.app-wallpaper-tint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Light mode: softens contrast while keeping sunset glow and silhouettes vibrant */
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.40) 0%, rgba(241, 245, 249, 0.30) 55%, rgba(15, 23, 42, 0.35) 100%);
+  transition: background 0.3s ease;
+}
+
+body.dark-mode .app-wallpaper-tint {
+  /* Dark mode: deep atmospheric twilight with warm sunset horizon */
+  background: linear-gradient(180deg, rgba(9, 13, 22, 0.54) 0%, rgba(15, 23, 42, 0.44) 55%, rgba(9, 13, 22, 0.65) 100%);
+}
+
+.ambient-glow-1 {
+  display: none;
 }
 
 .ambient-glow-2 {
-  position: fixed;
-  bottom: 40px;
-  left: -120px;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, rgba(239, 68, 68, 0.04) 70%, transparent 100%);
-  pointer-events: none;
-  z-index: 0;
-  max-width: 100vw;
+  display: none;
 }
 
 /* App Wrapper Container */
@@ -692,17 +713,21 @@ body.dark-mode .mongolian-meaning {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 68px;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  min-height: calc(64px + env(safe-area-inset-bottom, 0px));
   background: var(--glass-bg);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
   border-top: 1px solid var(--glass-border);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-around;
-  padding: 4px 12px env(safe-area-inset-bottom);
+  padding-top: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 100;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .nav-item {
