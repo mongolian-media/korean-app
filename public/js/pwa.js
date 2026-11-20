@@ -324,6 +324,8 @@ window.PWA = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { window.PWA.init(); });
+} else {
   window.PWA.init();
-});
+}

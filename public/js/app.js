@@ -2586,6 +2586,8 @@ window.App = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { window.App.init(); });
+} else {
   window.App.init();
-});
+}
