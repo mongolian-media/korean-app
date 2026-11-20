@@ -15,6 +15,13 @@ window.App = {
   vocabTab: 'all', // 'all', 'sentences', 'bookmarked'
   vocabSearchQuery: '',
   vocabDayFilter: 'all',
+  _cachedVocabList: null,
+  _cachedSentencesList: null,
+
+  invalidateVocabCache() {
+    this._cachedVocabList = null;
+    this._cachedSentencesList = null;
+  },
 
   hasActiveAccess() {
     if (!this.userProfile) return false;
@@ -40,6 +47,7 @@ window.App = {
       // 2. Load Static Alphabet & Curriculum Data
       this.alphabet = window.ALPHABET_DATA || null;
       this.curriculum = window.CURRICULUM_DATA || null;
+      this.invalidateVocabCache();
 
       // 3. Authenticate with Server (non-blocking)
       try {
@@ -84,6 +92,7 @@ window.App = {
         const currRes = await window.API.fetchCurriculum();
         if (currRes.ok && currRes.data.curriculum) {
           this.curriculum = currRes.data.curriculum;
+          this.invalidateVocabCache();
         }
         // Sync server progress
         await window.StorageManager.loadFromServer();
@@ -1196,18 +1205,31 @@ window.App = {
 
   toggleSentenceBookmark(sId) {
     const state = window.StorageManager.get();
-    const curr = this.curriculum.find(d => d.id === this.currentDayId);
-    const sentence = curr ? curr.sentences.find(s => s.id === sId) : null;
+    const currList = this.curriculum || window.CURRICULUM_DATA || [];
+    let sentence = null;
+    let foundDayId = this.currentDayId;
+    for (const d of currList) {
+      const found = (d.sentences || []).find(s => s.id === sId);
+      if (found) {
+        sentence = found;
+        foundDayId = d.id;
+        break;
+      }
+    }
     if (sentence) {
       window.StorageManager.toggleBookmarkVocab(state, {
         id: sentence.id,
         ko: sentence.ko,
         mn: sentence.mn,
-        ro: sentence.ro,
-        tip: sentence.context
+        ro: sentence.ro || '',
+        tip: sentence.context || ''
       });
       window.StorageManager.save(state);
-      this.renderDayLesson(document.getElementById('main-content'), this.currentDayId);
+      if (this.currentView === 'vocab') {
+        this.renderVocab(document.getElementById('main-content'));
+      } else {
+        this.renderDayLesson(document.getElementById('main-content'), foundDayId);
+      }
     }
   },
 
@@ -1504,7 +1526,7 @@ window.App = {
   },
 
   // =============================================================
-  // 6. VOCABULARY BANK VIEW (ALL 300 SENTENCES & 400+ WORDS)
+  // 6. VOCABULARY BANK VIEW (ALL 900 SENTENCES & 1400+ WORDS)
   // =============================================================
   getAllVocabList() {
     if (this._cachedVocabList) return this._cachedVocabList;
@@ -1628,7 +1650,7 @@ window.App = {
               📚 Үгс (${allVocab.length})
             </button>
             <button class="pill-btn ${activeTab === 'sentences' ? 'active' : ''}" onclick="App.switchVocabTab('sentences')">
-              💬 Өгүүлбэр (300)
+              💬 Өгүүлбэр (${allSentences.length})
             </button>
             <button class="pill-btn ${activeTab === 'bookmarked' ? 'active' : ''}" onclick="App.switchVocabTab('bookmarked')">
               ⭐ Хадгалсан (${bookmarked.length})
@@ -1703,7 +1725,7 @@ window.App = {
           `}
         ` : ''}
 
-        <!-- Tab 2: 300 Full Sentences -->
+        <!-- Tab 2: 900 Full Sentences -->
         ${activeTab === 'sentences' ? `
           <div style="margin-bottom: 12px; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 0 4px;">
             Илэрц: <span style="color: var(--brand-blue);">${filteredSentences.length}</span> өгүүлбэр олдлоо
