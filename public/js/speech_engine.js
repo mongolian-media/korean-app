@@ -146,13 +146,53 @@ window.SpeechEngine = {
     this.speak(text, { ...options, rate: 0.75 });
   },
 
+  showPlayingToast(text) {
+    let toast = document.getElementById('audio-play-indicator');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'audio-play-indicator';
+      toast.style.cssText = `
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.94);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        padding: 8px 18px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span>🔊</span><span>Солонгосоор уншиж байна...</span>`;
+    toast.style.opacity = '1';
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      if (toast) toast.style.opacity = '0';
+    }, 2500);
+  },
+
   // -------------------------------------------------------------
-  // Engine 1: Native Studio Audio Stream (Google TTS)
+  // Engine 1: Native Studio Audio Stream (Backend Proxy + Fallback)
   // Hardened for iOS Safari & Android WebKit
   // -------------------------------------------------------------
   playAudioStream(text, options = {}) {
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
+    // 1. Same-Origin Backend Proxy (Zero CORS issues, completely trusted by iOS Safari)
+    const backendUrl = `/api/tts?q=${encodeURIComponent(cleanText)}`;
+    // 2. Direct Google TTS fallback
+    const directUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
 
     if ('audioSession' in navigator) {
       try {
@@ -160,12 +200,10 @@ window.SpeechEngine = {
       } catch (e) {}
     }
 
-    // Reuse audio element or create clean one without CORS restrictions
     const audio = this.audioElement || new Audio();
     this.audioElement = audio;
     audio.playsInline = true;
     audio.referrerPolicy = 'no-referrer';
-    // IMPORTANT: DO NOT set crossOrigin='anonymous' because Google TTS does not send CORS headers, which causes Safari to abort immediately!
     audio.removeAttribute('crossorigin');
     this.currentAudio = audio;
 
@@ -178,6 +216,7 @@ window.SpeechEngine = {
 
     audio.onplay = () => {
       this.isSpeaking = true;
+      this.showPlayingToast(cleanText);
       if (options.onStart) options.onStart();
     };
 
@@ -187,27 +226,48 @@ window.SpeechEngine = {
       if (options.onEnd) options.onEnd();
     };
 
+    let triedDirect = false;
     audio.onerror = (err) => {
       console.warn('[Audio Stream Error, trying fallback]', err);
+      if (!triedDirect) {
+        triedDirect = true;
+        audio.src = directUrl;
+        audio.load();
+        audio.play().catch(() => {
+          this.isSpeaking = false;
+          this.currentAudio = null;
+          this.speakWebSpeech(cleanText, options);
+        });
+        return;
+      }
       this.isSpeaking = false;
       this.currentAudio = null;
       if (options.onFallback) {
         options.onFallback();
       } else {
-        this.speakWebSpeech(text, options);
+        this.speakWebSpeech(cleanText, options);
       }
     };
 
-    audio.src = url;
+    audio.src = backendUrl;
     audio.load();
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
         console.warn('[Audio Play Promise Rejected]', err);
+        if (!triedDirect) {
+          triedDirect = true;
+          audio.src = directUrl;
+          audio.load();
+          audio.play().catch(() => {
+            this.speakWebSpeech(cleanText, options);
+          });
+          return;
+        }
         if (options.onFallback) {
           options.onFallback();
         } else {
-          this.speakWebSpeech(text, options);
+          this.speakWebSpeech(cleanText, options);
         }
       });
     }
@@ -256,6 +316,7 @@ window.SpeechEngine = {
     utterance.onstart = () => {
       started = true;
       this.isSpeaking = true;
+      this.showPlayingToast(text);
       if (options.onStart) options.onStart();
     };
 
