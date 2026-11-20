@@ -1,6 +1,6 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v59)
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v60)
 // Built specifically to eliminate iOS WebKit / Safari offline redirect errors
-const VERSION = 'v59';
+const VERSION = 'v60';
 const SHELL_CACHE = `mm-korean-${VERSION}`;
 
 const SHELL = [
