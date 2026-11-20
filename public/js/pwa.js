@@ -1,4 +1,4 @@
-// MONGOLIAN MEDIA — PWA Mobile Installation Controller (v47 Offline Hardened)
+// MONGOLIAN MEDIA — PWA Mobile Installation Controller (v48 Offline Hardened)
 
 function makeSafeCacheResponse(blob, originalRes, defaultContentType) {
   const safeHeaders = new Headers();
@@ -46,23 +46,24 @@ window.PWA = {
     if (!('caches' in window)) return;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
-    const CACHE_NAME = 'mm-korean-v47';
+    const CACHE_NAME = 'mm-korean-v48';
     const urlsToCache = [
       '/',
       '/index.html',
       '/manifest.json',
       '/css/glassmorphism.css?v=20',
-      '/js/api.js?v=47',
-      '/js/storage_manager.js?v=47',
-      '/js/speech_engine.js?v=47',
-      '/js/pwa.js?v=47',
-      '/js/alphabet_data.js?v=47',
-      '/js/curriculum_data.js?v=47',
-      '/js/app.js?v=47',
+      '/js/api.js?v=48',
+      '/js/storage_manager.js?v=48',
+      '/js/speech_engine.js?v=48',
+      '/js/pwa.js?v=48',
+      '/js/alphabet_data.js?v=48',
+      '/js/curriculum_data.js?v=48',
+      '/js/app.js?v=48',
       '/apple-touch-icon.png',
       '/apple-touch-icon-180x180.png',
       '/app-icon-192.png',
       '/app-icon-512.png',
+      '/mascot-icon-v1.png',
       '/favicon.ico',
       '/assets/logo.jpg'
     ];
