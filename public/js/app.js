@@ -1912,18 +1912,6 @@ window.App = {
           `}
         </div>
 
-        ${!user ? `
-          <!-- Quick Code Entry for Guests -->
-          <div class="glass-card">
-            <h4 style="margin-bottom: 8px;">🔑 1 удаагийн 6 оронтой кодоо идэвхжүүлэх</h4>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Mongolian Media-аас авсан 6 оронтой тоон кодоо оруулаад сургалтаа шууд эхлүүлнэ үү.</p>
-            <div style="display: flex; gap: 8px;">
-              <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="profile-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 4px; font-size: 18px; text-align: center;">
-              <button class="btn-primary" style="width: auto; padding: 10px 18px;" onclick="App.submitProfileCode()">Нэвтрэх</button>
-            </div>
-          </div>
-        ` : ''}
-
         <!-- Settings block -->
         <div class="glass-card">
           <h4 style="margin-bottom: 14px;">⚙️ Тохиргоо</h4>
