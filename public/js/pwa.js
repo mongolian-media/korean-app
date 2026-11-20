@@ -1,119 +1,33 @@
-// MONGOLIAN MEDIA — PWA Mobile Installation Controller (v48 Offline Hardened)
-
-function makeSafeCacheResponse(blob, originalRes, defaultContentType) {
-  const safeHeaders = new Headers();
-  if (originalRes && originalRes.headers) {
-    for (const [key, val] of originalRes.headers.entries()) {
-      const lower = key.toLowerCase();
-      // CRITICAL FOR IOS SAFARI: Never allow compression headers in cached responses!
-      if (lower !== 'content-encoding' && lower !== 'content-length' && lower !== 'transfer-encoding') {
-        safeHeaders.set(key, val);
-      }
-    }
-  }
-  if (defaultContentType && !safeHeaders.get('content-type')) {
-    safeHeaders.set('content-type', defaultContentType);
-  }
-  return new Response(blob, {
-    status: (originalRes && originalRes.status) || 200,
-    statusText: (originalRes && originalRes.statusText) || 'OK',
-    headers: safeHeaders
-  });
-}
+// MONGOLIAN MEDIA — PWA Mobile Installation Controller (Production Standard)
 
 window.PWA = {
   deferredPrompt: null,
 
   init() {
-    this.requestPersistence();
     this.registerSW();
     this.setupInstallPrompt();
     this.detectStandalone();
     this.checkInAppBrowser();
-    this.ensureOfflineCache();
+    this.listenSWReady();
   },
 
-  async requestPersistence() {
-    try {
-      if (navigator.storage && navigator.storage.persist) {
-        const isPersisted = await navigator.storage.persist();
-        console.log('[PWA] Storage persisted:', isPersisted);
-      }
-    } catch (e) {}
-  },
-
-  async ensureOfflineCache() {
-    if (!('caches' in window)) return;
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-
-    const CACHE_NAME = 'mm-korean-v48';
-    const urlsToCache = [
-      '/',
-      '/index.html',
-      '/manifest.json',
-      '/css/glassmorphism.css?v=20',
-      '/js/api.js?v=48',
-      '/js/storage_manager.js?v=48',
-      '/js/speech_engine.js?v=48',
-      '/js/pwa.js?v=48',
-      '/js/alphabet_data.js?v=48',
-      '/js/curriculum_data.js?v=48',
-      '/js/app.js?v=48',
-      '/apple-touch-icon.png',
-      '/apple-touch-icon-180x180.png',
-      '/app-icon-192.png',
-      '/app-icon-512.png',
-      '/mascot-icon-v1.png',
-      '/favicon.ico',
-      '/assets/logo.jpg'
-    ];
-
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      
-      // Parallel fetch and cache with clean decompressed Response
-      await Promise.allSettled(
-        urlsToCache.map(async (url) => {
-          try {
-            const res = await fetch(url, { cache: 'no-cache' });
-            if (res.ok) {
-              const blob = await res.blob();
-              let ctype = '';
-              if (url.includes('.js')) ctype = 'application/javascript; charset=utf-8';
-              else if (url.includes('.css')) ctype = 'text/css; charset=utf-8';
-              else if (url.includes('.json')) ctype = 'application/json; charset=utf-8';
-              else if (url.includes('.png')) ctype = 'image/png';
-              else if (url.includes('.jpg')) ctype = 'image/jpeg';
-              
-              const safeRes = makeSafeCacheResponse(blob, res, ctype);
-              await cache.put(url, safeRes.clone());
-              const cleanUrl = url.split('?')[0];
-              await cache.put(cleanUrl, safeRes);
-            }
-          } catch (e) {}
+  registerSW() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+          if (reg.update) reg.update();
         })
-      );
+        .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
+    }
+  },
 
-      // Explicitly guarantee /index.html and /
-      try {
-        const indexRes = await fetch('/index.html', { cache: 'no-cache' });
-        if (indexRes.ok) {
-          const blob = await indexRes.blob();
-          const clean1 = makeSafeCacheResponse(blob, indexRes, 'text/html; charset=utf-8');
-          const clean2 = makeSafeCacheResponse(blob, indexRes, 'text/html; charset=utf-8');
-          await cache.put('/index.html', clean1);
-          await cache.put('/', clean2);
-        }
-      } catch (e) {}
-
-      // Verify that cache is intact
-      const testMatch = await cache.match('/index.html');
-      if (testMatch) {
-        console.log('[PWA] Foreground offline caching finished 100%!');
+  listenSWReady() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log('[PWA] Service Worker is active and offline cache is ready!');
         this.showOfflineReadyBadge();
-      }
-    } catch (err) {
-      console.warn('[PWA] ensureOfflineCache error:', err);
+      }).catch(() => {});
     }
   },
 
@@ -237,17 +151,6 @@ window.PWA = {
   openInChrome() {
     const hostAndPath = window.location.host + window.location.pathname + window.location.search;
     window.location.href = `intent://${hostAndPath}#Intent;scheme=https;package=com.android.chrome;end`;
-  },
-
-  registerSW() {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((reg) => {
-          console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
-          if (reg.update) reg.update();
-        })
-        .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
-    }
   },
 
   setupInstallPrompt() {
