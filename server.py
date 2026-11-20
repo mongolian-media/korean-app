@@ -18,6 +18,7 @@ import sys
 import time
 import datetime
 import urllib.parse
+import urllib.request
 import re
 import smtplib
 from email.mime.text import MIMEText
@@ -447,7 +448,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
-                self.send_header('ETag', '"v44-manifest"')
+                self.send_header('ETag', '"v45-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
@@ -463,7 +464,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
-                self.send_header('ETag', '"v44-html"')
+                self.send_header('ETag', '"v45-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
@@ -537,6 +538,43 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
     # ---------------------------------------------------------
     def handle_api_get(self, path, query):
         user, _ = get_authenticated_user(self.headers)
+
+        # High-Fidelity Audio TTS Proxy (Solves iOS Safari cross-origin CORS & bot blocking)
+        if path == '/api/tts':
+            text = query.get('q', [''])[0] or query.get('text', [''])[0]
+            text = text.strip()
+            if not text:
+                return self.send_json(400, {"error": "missing_text"})
+            
+            clean_text = re.sub(r'\[.*?\]|\(.*?\)', '', text).strip()
+            if not clean_text:
+                clean_text = text
+
+            try:
+                encoded_q = urllib.parse.quote(clean_text)
+                google_url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl=ko&client=tw-ob&q={encoded_q}"
+                req = urllib.request.Request(
+                    google_url,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Referer': 'https://translate.google.com/'
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    audio_bytes = resp.read()
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'audio/mpeg')
+                self.send_header('Content-Length', str(len(audio_bytes)))
+                self.send_header('Accept-Ranges', 'bytes')
+                self.send_header('Cache-Control', 'public, max-age=604800, immutable')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(audio_bytes)
+                return
+            except Exception as e:
+                print(f"[!] TTS Proxy error: {e}")
+                return self.send_json(500, {"error": "tts_failed", "details": str(e)})
 
         # Public App Info
         if path == '/api/info':
