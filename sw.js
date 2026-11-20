@@ -1,128 +1,118 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v60)
-// Built specifically to eliminate iOS WebKit / Safari offline redirect errors
-const VERSION = 'v60';
-const SHELL_CACHE = `mm-korean-${VERSION}`;
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v61)
+// Built strictly on drive.uugiscar.com offline architecture
+
+const VERSION = 'v61';
+const SHELL_CACHE = `shell-${VERSION}`;
+const IMAGE_CACHE = 'images-v1';
 
 const SHELL = [
-  '/',
   './',
+  '/',
+  'index.html',
   '/index.html',
+  'manifest.json',
   '/manifest.json',
+  'css/glassmorphism.css',
   '/css/glassmorphism.css',
+  'js/pwa.js',
   '/js/pwa.js',
+  'js/api.js',
   '/js/api.js',
-  '/js/speech_engine.js',
+  'js/storage_manager.js',
   '/js/storage_manager.js',
+  'js/speech_engine.js',
+  '/js/speech_engine.js',
+  'js/alphabet_data.js',
   '/js/alphabet_data.js',
+  'js/curriculum_data.js',
   '/js/curriculum_data.js',
+  'js/app.js',
   '/js/app.js',
+  'apple-touch-icon.png',
   '/apple-touch-icon.png',
+  'favicon.ico',
   '/favicon.ico',
+  'assets/logo.jpg',
   '/assets/logo.jpg'
 ];
 
-/**
- * Strips the internal 'redirected' flag by constructing a fresh Response object.
- * iOS Safari / WebKit strictly blocks service worker responses if redirected === true
- * during offline navigation, throwing "Safari can't open the page because your iPhone is not connected to the internet".
- */
-function cleanResponse(response) {
-  if (!response) return response;
-  return new Response(response.body, {
-    status: response.status || 200,
-    statusText: response.statusText || 'OK',
-    headers: response.headers
-  });
-}
-
-// 1. Install: Precache all essential files atomically, cleaning every response
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then(async (cache) => {
-      for (const url of SHELL) {
-        try {
-          const res = await fetch(url, { cache: 'no-cache' });
-          if (res && (res.ok || res.type === 'opaque')) {
-            const clean = new Response(res.body, {
-              status: res.status,
-              statusText: res.statusText,
-              headers: res.headers
-            });
-            await cache.put(url, clean);
-          }
-        } catch (e) {
-          console.warn('[SW] Precache item failed:', url, e);
-        }
-      }
+    caches.open(SHELL_CACHE).then((cache) => {
+      return Promise.all(
+        SHELL.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Precache item failed:', url, err);
+          })
+        )
+      );
     })
   );
   self.skipWaiting();
 });
 
-// 2. Activate: Purge old caches and claim clients immediately once the new cache is ready
 self.addEventListener('activate', (event) => {
-  const keep = new Set([SHELL_CACHE]);
+  const keep = new Set([SHELL_CACHE, IMAGE_CACHE]);
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((k) => !keep.has(k) && k.startsWith('mm-korean')).map((k) => caches.delete(k))
-      ))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => !keep.has(k) && (k.startsWith('shell-') || k.startsWith('mm-korean-')))
+            .map((k) => caches.delete(k))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
 
-// 3. NetworkFirst for dynamic & navigation requests; always strips redirected flag for Safari
+/** Network first so deploys show up immediately; cache when offline. */
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
+    // no-cache: always revalidate with the server, so a deploy is never hidden by the HTTP cache
     const response = await fetch(request, { cache: 'no-cache' });
     if (response && response.ok) {
-      const clean = new Response(response.clone().body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers
-      });
-      cache.put(request, clean).catch(() => {});
+      cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   } catch (err) {
     const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cleanResponse(cached);
+    if (cached) return cached;
 
-    const url = new URL(request.url);
-    const cachedPath = await cache.match(url.pathname, { ignoreSearch: true });
-    if (cachedPath) return cleanResponse(cachedPath);
-
-    // Offline document navigation fallback: return clean cached root app shell
-    if (request.mode === 'navigate' || request.destination === 'document' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '') {
-      const rootCached = await cache.match('/index.html', { ignoreSearch: true })
-                      || await cache.match('/', { ignoreSearch: true })
-                      || await cache.match('./', { ignoreSearch: true });
-      if (rootCached) return cleanResponse(rootCached);
+    // Offline document navigation fallback: return cached root app shell
+    if (request.mode === 'navigate') {
+      const fallback =
+        (await cache.match('./')) ||
+        (await cache.match('/')) ||
+        (await cache.match('index.html')) ||
+        (await cache.match('/index.html'));
+      if (fallback) return fallback;
     }
+
+    // Try matching URL pathname directly
+    const url = new URL(request.url);
+    const pathCached = await cache.match(url.pathname, { ignoreSearch: true });
+    if (pathCached) return pathCached;
+
     throw err;
   }
 }
 
-// 4. CacheFirst for static assets (icons, logo images)
+/** Static assets (images, icons) */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request, { ignoreSearch: true });
-  if (cached) return cleanResponse(cached);
+  if (cached) return cached;
   try {
     const response = await fetch(request);
     if (response && (response.ok || response.type === 'opaque')) {
-      const clean = new Response(response.clone().body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers
-      });
-      cache.put(request, clean).catch(() => {});
+      cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   } catch (e) {
     const fallback = await cache.match(request, { ignoreSearch: true });
-    if (fallback) return cleanResponse(fallback);
+    if (fallback) return fallback;
     throw e;
   }
 }
@@ -139,8 +129,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin === location.origin) {
-    if (url.pathname.startsWith('/assets/') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.ico')) {
-      event.respondWith(cacheFirst(request, SHELL_CACHE));
+    if (
+      url.pathname.startsWith('/assets/') ||
+      url.pathname.endsWith('.png') ||
+      url.pathname.endsWith('.jpg') ||
+      url.pathname.endsWith('.ico')
+    ) {
+      event.respondWith(cacheFirst(request, IMAGE_CACHE));
     } else {
       event.respondWith(networkFirst(request));
     }
