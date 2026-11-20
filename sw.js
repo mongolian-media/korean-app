@@ -1,6 +1,6 @@
-// MONGOLIAN MEDIA — Service Worker (iOS Apple & Android Bulletproof Offline Engine v57)
-// Built on drive.uugiscar.com production standard: updateViaCache: 'none', atomic addAll, response.clone()
-const VERSION = 'v57';
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v58)
+// Built on drive.uugiscar.com production standard: updateViaCache: 'none', atomic addAll, clone()
+const VERSION = 'v58';
 const SHELL_CACHE = `mm-korean-${VERSION}`;
 
 const SHELL = [
@@ -20,7 +20,7 @@ const SHELL = [
   '/assets/logo.jpg'
 ];
 
-// Precache all essential shell files atomically. If any file fails, install fails cleanly.
+// 1. Install: Precache all essential files atomically. If any file fails, install fails safely.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL))
@@ -28,7 +28,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Purge old caches and claim clients immediately once the new cache is active
+// 2. Activate: Purge old caches and claim clients immediately once the new cache is ready
 self.addEventListener('activate', (event) => {
   const keep = new Set([SHELL_CACHE]);
   event.waitUntil(
@@ -40,12 +40,10 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/** Network first so deploys show up immediately; cache when offline.
- *  Uses response.clone() and only caches valid (ok) responses. */
+// 3. NetworkFirst for dynamic & navigation requests; caches valid responses with clone()
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
-    // no-cache: always revalidate with the server so new deploys are detected immediately
     const response = await fetch(request, { cache: 'no-cache' });
     if (response && response.ok) {
       cache.put(request, response.clone());
@@ -68,7 +66,7 @@ async function networkFirst(request) {
   }
 }
 
-/** Static icons, logos, and images: serve from cache first */
+// 4. CacheFirst for static assets (icons, logo images)
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request, { ignoreSearch: true });
@@ -103,26 +101,5 @@ self.addEventListener('fetch', (event) => {
     } else {
       event.respondWith(networkFirst(request));
     }
-  }
-});
-
-// Skip waiting & claim message triggers
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'CLAIM_CLIENTS') {
-    self.clients.claim().catch(() => {});
-  }
-  if (event.data && event.data.type === 'FORCE_PRECACHE') {
-    event.waitUntil(
-      caches.open(SHELL_CACHE)
-        .then((cache) => cache.addAll(SHELL))
-        .then(() => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ success: true, cacheName: SHELL_CACHE });
-          }
-        })
-    );
   }
 });

@@ -365,8 +365,6 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'SAMEORIGIN')
         self.send_header('X-XSS-Protection', '1; mode=block')
-        # Allow service worker scope
-        self.send_header('Service-Worker-Allowed', '/')
         super().end_headers()
 
     def send_json(self, status_code, data):
@@ -432,7 +430,6 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
                 self.send_header('Pragma', 'no-cache')
                 self.send_header('Expires', '0')
-                self.send_header('Service-Worker-Allowed', '/')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(sw_bytes)
@@ -448,7 +445,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
-                self.send_header('ETag', '"v57-manifest"')
+                self.send_header('ETag', '"v58-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
@@ -464,7 +461,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
                 self.send_header('Cache-Control', 'no-cache, must-revalidate')
-                self.send_header('ETag', '"v57-html"')
+                self.send_header('ETag', '"v58-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
