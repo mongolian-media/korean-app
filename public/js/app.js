@@ -1440,8 +1440,6 @@ window.App = {
     window.StorageManager.save(state);
 
     // Re-render Step 5 so all questions 1-5 retain their checked states
-    const curr = this.curriculum || window.CURRICULUM_DATA || [];
-    const day = curr.find(d => d.id === dayId);
     if (day) {
       let sentences = day.sentences || [];
       if (this.splitMode === 'first') sentences = sentences.slice(0, 5);
