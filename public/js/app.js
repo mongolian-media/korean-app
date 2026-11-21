@@ -349,6 +349,8 @@ window.App = {
       this.renderHome(container);
     } else if (viewName === 'alphabet') {
       this.renderAlphabet(container);
+    } else if (viewName === 'numbers') {
+      this.renderNumbersLesson(container);
     } else if (viewName === 'lessons-list') {
       this.renderDaysList(container);
     } else if (viewName.startsWith('day-')) {
@@ -452,12 +454,12 @@ window.App = {
           </div>
         </div>
 
-        <!-- Quick Access to Alphabet Prep if not finished -->
+        <!-- 1. Хангыл үсгийн хичээл -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('alphabet')">
           <div style="display: flex; align-items: center; gap: 14px;">
             <span style="font-size: 28px;">🔤</span>
             <div>
-              <strong style="display: block; font-size: 15px;">Хангылын үсгийн бэлтгэл</strong>
+              <strong style="display: block; font-size: 15px;">Хангыл үсгийн хичээл</strong>
               <span style="font-size: 12px; color: var(--text-muted);">
                 Төлөв: ${state.alphabetStatus === 'completed' ? '✅ Дууссан' : (state.alphabetStatus === 'skipped' ? '⏭️ Алгассан' : '⏳ Үзэж байгаа')}
               </span>
@@ -466,12 +468,24 @@ window.App = {
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
         </div>
 
-        <!-- 90-Day Quick Roadmap Shortcut -->
+        <!-- 2. Тооны хичээл -->
+        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('numbers')">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="font-size: 28px;">🔢</span>
+            <div>
+              <strong style="display: block; font-size: 15px;">Тооны хичээл</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">Хятад ба уугуул солонгос тоо, үнэ ба эд зүйл тоолох</span>
+            </div>
+          </div>
+          <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
+        </div>
+
+        <!-- 3. 90 өдрийн хөтөлбөр -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('lessons-list')">
           <div style="display: flex; align-items: center; gap: 14px;">
             <span style="font-size: 28px;">📚</span>
             <div>
-              <strong style="display: block; font-size: 15px;">90 Өдрийн хөтөлбөр (3 шат, 900 Өгүүлбэр)</strong>
+              <strong style="display: block; font-size: 15px;">90 өдрийн хөтөлбөр</strong>
               <span style="font-size: 12px; color: var(--text-muted);">🌟 1-р шат (1–30) • 🚀 2-р шат (31–60) • 👑 3-р шат (61–90)</span>
             </div>
           </div>
@@ -494,6 +508,352 @@ window.App = {
     state.activeDay = 1;
     window.StorageManager.save(state);
     this.openDay(1);
+  },
+
+  // =============================================================
+  // 1.5 NUMBERS LESSON VIEW (ТООНЫ ХИЧЭЭЛ)
+  // =============================================================
+  renderNumbersLesson(container) {
+    container.innerHTML = `
+      <div class="fade-in">
+        <!-- Back Navigation & Title -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <button class="btn-glass" onclick="App.navigate('home')" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span>←</span>
+            <span>Нүүр рүү буцах</span>
+          </button>
+          <span class="hero-tag" style="margin: 0;">🔢 ТООНЫ ХИЧЭЭЛ</span>
+        </div>
+
+        <!-- Intro Overview Card -->
+        <div class="glass-card" style="margin-bottom: 14px;">
+          <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 6px; color: var(--text-primary);">Солонгос хэлний хоёр төрлийн тоо</h2>
+          <p style="font-size: 13.5px; line-height: 1.5; color: var(--text-muted); margin: 0;">
+            Солонгос хэлэнд тоог хэрэглэж буй нөхцөлөөс хамааран <strong>Хятад гаралтай тоо</strong> болон <strong>Уугуул солонгос тоо</strong> гэсэн хоёр өөр тооллын систем ашигладаг.
+          </p>
+        </div>
+
+        <!-- 1. Мөнгө, үнэ хэлэх (Хятад гаралтай тоо) -->
+        <div class="glass-card" style="margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--brand-blue); margin: 0;">1. Мөнгө, үнэ хэлэх</h3>
+            <span style="font-size: 11px; padding: 2px 8px; background: rgba(37,99,235,0.12); color: var(--brand-blue); border-radius: 9999px; font-weight: 600;">Хятад гаралтай тоо</span>
+          </div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Хятад гаралтай тоо хэрэглэнэ.
+          </p>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">1–10 хүртэлх тоо:</div>
+          <div class="number-chips-grid">
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">일</strong> <span style="font-size: 12px; color: var(--text-muted);">(1)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('일')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">이</strong> <span style="font-size: 12px; color: var(--text-muted);">(2)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('이')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">삼</strong> <span style="font-size: 12px; color: var(--text-muted);">(3)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('삼')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">사</strong> <span style="font-size: 12px; color: var(--text-muted);">(4)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">오</strong> <span style="font-size: 12px; color: var(--text-muted);">(5)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('오')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">육</strong> <span style="font-size: 12px; color: var(--text-muted);">(6)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('육')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">칠</strong> <span style="font-size: 12px; color: var(--text-muted);">(7)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('칠')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">팔</strong> <span style="font-size: 12px; color: var(--text-muted);">(8)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('팔')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">구</strong> <span style="font-size: 12px; color: var(--text-muted);">(9)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('구')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">십</strong> <span style="font-size: 12px; color: var(--text-muted);">(10)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('십')" title="Сонсох">🔊</button>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 12px 0 6px 0;">Том тоонууд:</div>
+          <div class="number-chips-grid">
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">백</strong> <span style="font-size: 12px; color: var(--text-muted);">(100)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('백')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">천</strong> <span style="font-size: 12px; color: var(--text-muted);">(1,000)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('천')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">만</strong> <span style="font-size: 12px; color: var(--text-muted);">(10,000)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('만')" title="Сонсох">🔊</button>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 14px 0 6px 0;">• Өдөр тутмын жишээ:</div>
+          <div class="example-phrase-card">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">3,000원 <span style="color: var(--brand-blue); margin-left: 6px;">[삼천 원]</span></div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">3,000 вон</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('삼천 원')" title="Сонсох">🔊</button>
+          </div>
+          <div class="example-phrase-card">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">15,000원 <span style="color: var(--brand-blue); margin-left: 6px;">[만 오천 원]</span></div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">15,000 вон</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('만 오천 원')" title="Сонсох">🔊</button>
+          </div>
+        </div>
+
+        <!-- 2. Эд зүйл, хүн тоолох (Уугуул солонгос тоо) -->
+        <div class="glass-card" style="margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: #10b981; margin: 0;">2. Эд зүйл, хүн тоолох</h3>
+            <span style="font-size: 11px; padding: 2px 8px; background: rgba(16,185,129,0.12); color: #10b981; border-radius: 9999px; font-weight: 600;">Уугуул солонгос тоо</span>
+          </div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 10px;">
+            Өдөр тутам эд зүйл, хүн тоолоход уугуул солонгос тоо хэрэглэнэ.
+          </p>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">1–10 хүртэлх тоо:</div>
+          <div class="number-chips-grid">
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">하나</strong> <span style="font-size: 12px; color: var(--text-muted);">(1)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('하나')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">둘</strong> <span style="font-size: 12px; color: var(--text-muted);">(2)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('둘')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">셋</strong> <span style="font-size: 12px; color: var(--text-muted);">(3)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('셋')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">넷</strong> <span style="font-size: 12px; color: var(--text-muted);">(4)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('넷')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">다섯</strong> <span style="font-size: 12px; color: var(--text-muted);">(5)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('다섯')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">여섯</strong> <span style="font-size: 12px; color: var(--text-muted);">(6)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('여섯')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">일곱</strong> <span style="font-size: 12px; color: var(--text-muted);">(7)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('일곱')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">여덟</strong> <span style="font-size: 12px; color: var(--text-muted);">(8)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('여덟')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">아홉</strong> <span style="font-size: 12px; color: var(--text-muted);">(9)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('아홉')" title="Сонсох">🔊</button>
+            </div>
+            <div class="number-chip-card">
+              <div><strong style="font-size: 15px;">열</strong> <span style="font-size: 12px; color: var(--text-muted);">(10)</span></div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('열')" title="Сонсох">🔊</button>
+            </div>
+          </div>
+
+          <!-- Transformation Rule Banner -->
+          <div style="background: rgba(16, 185, 129, 0.09); border: 1.5px dashed rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px 14px; margin: 12px 0;">
+            <div style="font-weight: 700; font-size: 13.5px; color: #047857; margin-bottom: 4px;">⚠️ Тоолох үгийн өмнөх хувирал:</div>
+            <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5;">
+              Тоолох үгийн өмнө <strong>하나 → 한</strong>, <strong>둘 → 두</strong>, <strong>셋 → 세</strong>, <strong>넷 → 네</strong> гэж хувирна.
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 12px 0 6px 0;">• Өдөр тутмын жишээ:</div>
+          <div class="example-phrase-card">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">사과 한 개</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">нэг алим (하나 → 한)</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사과 한 개')" title="Сонсох">🔊</button>
+          </div>
+          <div class="example-phrase-card">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">커피 두 잔</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">хоёр аяга кофе (둘 → 두)</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('커피 두 잔')" title="Сонсох">🔊</button>
+          </div>
+          <div class="example-phrase-card">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">사람 세 명</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">гурван хүн (셋 → 세)</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사람 세 명')" title="Сонсох">🔊</button>
+          </div>
+        </div>
+
+        <!-- 3. Ялгааг нэг жишээгээр тогтоох -->
+        <div class="glass-card" style="margin-bottom: 14px; border: 1.5px solid rgba(245, 158, 11, 0.35);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: #d97706; margin: 0;">3. Ялгааг нэг жишээгээр тогтоох</h3>
+            <span style="font-size: 11px; padding: 2px 8px; background: rgba(245,158,11,0.12); color: #d97706; border-radius: 9999px; font-weight: 600;">«3» тооны харьцуулалт</span>
+          </div>
+
+          <div class="example-phrase-card" style="border-left: 3px solid #10b981;">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">사과 <span style="color: #10b981;">세</span> 개</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">гурван алим (Эд зүйл тоолоход: <strong>세</strong>)</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사과 세 개')" title="Сонсох">🔊</button>
+          </div>
+
+          <div class="example-phrase-card" style="border-left: 3px solid var(--brand-blue);">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);"><span style="color: var(--brand-blue);">삼</span>천 원</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">гурван мянган вон (Үнэ хэлэхэд: <strong>삼</strong>)</div>
+            </div>
+            <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('삼천 원')" title="Сонсох">🔊</button>
+          </div>
+
+          <div style="font-size: 13px; color: var(--text-primary); margin-top: 10px; padding: 10px 12px; background: var(--glass-bg); border-radius: 10px; line-height: 1.45;">
+            💡 <strong>Дүгнэлт:</strong> «3» гэсэн тоо эд зүйл тоолоход <strong>세</strong>, үнэ хэлэхэд <strong>삼</strong> болж байгааг тогтоож аваарай.
+          </div>
+        </div>
+
+        <!-- 4. Богино 2 Дасгал -->
+        <div class="glass-card" style="margin-bottom: 24px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">📝 Мэдлэгээ шалгах богино дасгал</h3>
+          
+          <!-- Exercise 1: 3,000 вон -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 14.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+              1. «3,000 вон»-ыг солонгосоор зөв сонгоно уу:
+            </div>
+            <div id="number-quiz-1" class="quiz-options-list" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(1, 0)">
+                <div style="font-weight: 600; font-size: 15px;">삼천 원</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('삼천 원')" title="Сонсох">🔊</button>
+              </div>
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(1, 1)">
+                <div style="font-weight: 600; font-size: 15px;">세천 원</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('세천 원')" title="Сонсох">🔊</button>
+              </div>
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(1, 2)">
+                <div style="font-weight: 600; font-size: 15px;">삼백 원</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('삼백 원')" title="Сонсох">🔊</button>
+              </div>
+            </div>
+            <div id="number-quiz-feedback-1" style="display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px;"></div>
+          </div>
+
+          <!-- Exercise 2: гурван алим -->
+          <div>
+            <div style="font-size: 14.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+              2. «гурван алим»-ыг солонгосоор зөв сонгоно уу:
+            </div>
+            <div id="number-quiz-2" class="quiz-options-list" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(2, 0)">
+                <div style="font-weight: 600; font-size: 15px;">사과 세 개</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사과 세 개')" title="Сонсох">🔊</button>
+              </div>
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(2, 1)">
+                <div style="font-weight: 600; font-size: 15px;">사과 삼 개</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사과 삼 개')" title="Сонсох">🔊</button>
+              </div>
+              <div class="quiz-opt-card" onclick="App.answerNumberQuiz(2, 2)">
+                <div style="font-weight: 600; font-size: 15px;">사과 셋 개</div>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('사과 셋 개')" title="Сонсох">🔊</button>
+              </div>
+            </div>
+            <div id="number-quiz-feedback-2" style="display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  answerNumberQuiz(qId, selectedIdx) {
+    const cardContainer = document.getElementById(`number-quiz-${qId}`);
+    if (!cardContainer) return;
+    if (cardContainer.dataset.answered === 'true') return;
+    cardContainer.dataset.answered = 'true';
+
+    const cards = cardContainer.querySelectorAll('.quiz-opt-card');
+    const feedback = document.getElementById(`number-quiz-feedback-${qId}`);
+
+    const quizzes = [
+      {
+        id: 1,
+        correctIdx: 0,
+        options: [
+          { text: '삼천 원', ko: '삼천 원' },
+          { text: '세천 원', ko: '세천 원' },
+          { text: '삼백 원', ko: '삼백 원' }
+        ],
+        explanation: 'Мөнгө, үнэ хэлэхэд Хятад гаралтай тоо (삼) ашигладаг тул «3,000 вон» нь «삼천 원» болно.'
+      },
+      {
+        id: 2,
+        correctIdx: 0,
+        options: [
+          { text: '사과 세 개', ko: '사과 세 개' },
+          { text: '사과 삼 개', ko: '사과 삼 개' },
+          { text: '사과 셋 개', ko: '사과 셋 개' }
+        ],
+        explanation: 'Эд зүйл тоолоход уугуул солонгос тоо хэрэглэх бөгөөд тоолох нэгжийн (개) өмнө 셋 нь «세» болж хувирдаг тул «사과 세 개» гэнэ.'
+      }
+    ];
+
+    const q = quizzes.find(item => item.id === qId);
+    if (!q) return;
+
+    cards.forEach((card, idx) => {
+      card.style.pointerEvents = 'none';
+      if (idx === q.correctIdx) {
+        if (idx === selectedIdx) {
+          card.classList.add('selected-correct');
+        } else {
+          card.classList.add('revealed-correct');
+        }
+      } else if (idx === selectedIdx) {
+        card.classList.add('selected-wrong');
+      } else {
+        card.classList.add('dimmed');
+      }
+    });
+
+    const isCorrect = selectedIdx === q.correctIdx;
+    if (feedback) {
+      feedback.style.display = 'block';
+      feedback.className = `glass-card ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`;
+      feedback.innerHTML = `
+        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px; color: ${isCorrect ? '#059669' : '#dc2626'};">
+          ${isCorrect ? '✅ Зөв хариуллаа!' : '❌ Буруу байна!'}
+        </div>
+        <div style="font-size: 13px; color: var(--text-primary); line-height: 1.45;">
+          ${q.explanation}
+        </div>
+      `;
+    }
+
+    const optToSpeak = q.options[selectedIdx] || q.options[q.correctIdx];
+    if (optToSpeak && window.SpeechEngine && window.SpeechEngine.speak) {
+      window.SpeechEngine.speak(optToSpeak.ko);
+    }
   },
 
   // =============================================================
