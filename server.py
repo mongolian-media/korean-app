@@ -43,7 +43,8 @@ DEFAULT_CONFIG = {
     },
     "payment": {
         "bank_name": "Хаан Банк (Khan Bank)",
-        "account_number": "5946179010",
+        "account_number": "5252631771",
+        "iban": "65 000 500",
         "account_holder": "Н.Батцогт",
         "amount_mnt": 49000,
         "currency": "MNT",
