@@ -1189,5 +1189,49 @@ select, input, textarea {
   background: rgba(239, 68, 68, 0.12) !important;
 }
 
+/* Numbers Lesson Extended Styles */
+.number-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  gap: 8px;
+}
+
+.number-toggle-btn {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin: 10px 0;
+}
+
+.number-toggle-btn:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--brand-blue);
+}
+
+.quiz-listening-box {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1.5px dashed var(--brand-blue);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
 
 
