@@ -873,18 +873,6 @@ window.App = {
 
   // --- TAB 1: ТОЙМ БА ТООНУУД ---
   renderNumbersTabNumbers() {
-    const tens = [
-      { num: 10, sino: '십', native: '열' },
-      { num: 20, sino: '이십', native: '스물' },
-      { num: 30, sino: '삼십', native: '서른' },
-      { num: 40, sino: '사십', native: '마흔' },
-      { num: 50, sino: '오십', native: '쉰' },
-      { num: 60, sino: '육십', native: '예순' },
-      { num: 70, sino: '칠십', native: '일흔' },
-      { num: 80, sino: '팔십', native: '여든' },
-      { num: 90, sino: '구십', native: '아흔' }
-    ];
-
     const base1to10 = [
       { num: 1, sino: '일', native: '하나' },
       { num: 2, sino: '이', native: '둘' },
@@ -896,6 +884,18 @@ window.App = {
       { num: 8, sino: '팔', native: '여덟' },
       { num: 9, sino: '구', native: '아홉' },
       { num: 10, sino: '십', native: '열' }
+    ];
+
+    const tens = [
+      { num: 10, sino: '십', native: '열' },
+      { num: 20, sino: '이십', native: '스물' },
+      { num: 30, sino: '삼십', native: '서른' },
+      { num: 40, sino: '사십', native: '마흔' },
+      { num: 50, sino: '오십', native: '쉰' },
+      { num: 60, sino: '육십', native: '예순' },
+      { num: 70, sino: '칠십', native: '일흔' },
+      { num: 80, sino: '팔십', native: '여든' },
+      { num: 90, sino: '구십', native: '아흔' }
     ];
 
     const bigNumbers = [
@@ -911,15 +911,41 @@ window.App = {
       <div class="glass-card" style="margin-bottom: 14px;">
         <h2 style="font-size: 18px; font-weight: 800; margin-bottom: 6px; color: var(--text-primary);">Хоёр төрлийн тоог зэрэгцүүлэх</h2>
         <p style="font-size: 13.5px; line-height: 1.5; color: var(--text-muted); margin: 0;">
-          Солонгос хэлний <strong>Хятад гаралтай</strong> (үнэ, огноо, утас) болон <strong>Уугуул солонгос</strong> (эд зүйл, хүн тоолох) тоонуудын аравтуудыг зэрэгцүүлэн суралцаарай.
+          Солонгос хэлний <strong>Хятад гаралтай</strong> (үнэ, огноо, утас) болон <strong>Уугуул солонгос</strong> (эд зүйл, хүн тоолох) тоонуудыг дарааллын дагуу зэрэгцүүлэн суралцаарай.
         </p>
       </div>
 
-      <!-- 10–90 Tens Comparison (Visible by Default) -->
+      <!-- 1. 1–10 Хүртэлх суурь тоо (ЭХЭНДЭЭ) -->
       <div class="glass-card" style="margin-bottom: 14px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0;">🔟 Аравтууд (10–90)</h3>
-          <span style="font-size: 11px; padding: 2px 8px; background: rgba(37,99,235,0.12); color: var(--brand-blue); border-radius: 9999px; font-weight: 600;">Үндсэн аравтууд</span>
+          <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0;">🔢 1. 1–10 хүртэлх тоо</h3>
+          <span style="font-size: 11px; padding: 2px 8px; background: rgba(37,99,235,0.12); color: var(--brand-blue); border-radius: 9999px; font-weight: 600;">Суурь тоо</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${base1to10.map(b => `
+            <div class="number-row-card">
+              <div style="font-size: 15px; font-weight: 800; min-width: 32px; color: var(--text-primary);">${b.num}</div>
+              <div style="display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center;">
+                <span style="font-size: 11.5px; color: var(--brand-blue); font-weight: 600;">Хятад:</span>
+                <strong style="font-size: 14.5px;">${b.sino}</strong>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.sino}')" title="Сонсох">🔊</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 5px; flex: 1; justify-content: flex-end;">
+                <span style="font-size: 11.5px; color: #10b981; font-weight: 600;">Уугуул:</span>
+                <strong style="font-size: 14.5px;">${b.native}</strong>
+                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.native}')" title="Сонсох">🔊</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 2. Аравтууд (10–90) -->
+      <div class="glass-card" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0;">🔟 2. Аравтууд (10–90)</h3>
+          <span style="font-size: 11px; padding: 2px 8px; background: rgba(16,185,129,0.12); color: #10b981; border-radius: 9999px; font-weight: 600;">10-аас 90</span>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -941,7 +967,7 @@ window.App = {
         </div>
       </div>
 
-      <!-- Combining Numbers (3 Examples) -->
+      <!-- Нийлмэл тоо жишээ (21, 35, 58) -->
       <div class="glass-card" style="margin-bottom: 14px;">
         <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">🔗 Тоог нийлүүлж унших жишээ:</h3>
         
@@ -985,62 +1011,30 @@ window.App = {
         </div>
       </div>
 
-      <!-- Collapsible Section 1: 1–10 хүртэлх тоо -->
-      <button class="number-toggle-btn" onclick="App.toggleNumbers1to10()">
-        <span>${this._numbersShow1to10 ? '▲ 1–10 хүртэлх тоог хумих' : '▼ 1–10 хүртэлх суурь тоог харах'}</span>
-        <span style="font-size: 12px; color: var(--text-muted);">${this._numbersShow1to10 ? 'Хаах' : 'Нээх'}</span>
-      </button>
-
-      ${this._numbersShow1to10 ? `
-        <div class="glass-card" style="margin-bottom: 14px;">
-          <h4 style="font-size: 14.5px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">1–10 хүртэлх суурь тоо:</h4>
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            ${base1to10.map(b => `
-              <div class="number-row-card">
-                <div style="font-size: 15px; font-weight: 800; min-width: 32px; color: var(--text-primary);">${b.num}</div>
-                <div style="display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center;">
-                  <span style="font-size: 11.5px; color: var(--brand-blue); font-weight: 600;">Хятад:</span>
-                  <strong style="font-size: 14.5px;">${b.sino}</strong>
-                  <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.sino}')" title="Сонсох">🔊</button>
-                </div>
-                <div style="display: flex; align-items: center; gap: 5px; flex: 1; justify-content: flex-end;">
-                  <span style="font-size: 11.5px; color: #10b981; font-weight: 600;">Уугуул:</span>
-                  <strong style="font-size: 14.5px;">${b.native}</strong>
-                  <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.native}')" title="Сонсох">🔊</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+      <!-- 3. Том тоо (100–1,000,000) -->
+      <div class="glass-card" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <h3 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0;">💰 3. Том тоо (100–1,000,000)</h3>
+          <span style="font-size: 11px; padding: 2px 8px; background: rgba(245,158,11,0.12); color: #d97706; border-radius: 9999px; font-weight: 600;">Хятад гаралтай</span>
         </div>
-      ` : ''}
 
-      <!-- Collapsible Section 2: Том тоо (100–1,000,000) -->
-      <button class="number-toggle-btn" onclick="App.toggleNumbersBig()">
-        <span>${this._numbersShowBig ? '▲ Том тоог хумих' : '▼ Том тоо (100–1,000,000) харах'}</span>
-        <span style="font-size: 12px; color: var(--text-muted);">${this._numbersShowBig ? 'Хаах' : 'Нээх'}</span>
-      </button>
-
-      ${this._numbersShowBig ? `
-        <div class="glass-card" style="margin-bottom: 14px;">
-          <h4 style="font-size: 14.5px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Том тооны нэгжүүд (Хятад гаралтай):</h4>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${bigNumbers.map(b => `
-              <div class="example-phrase-card">
-                <div>
-                  <div style="font-size: 16px; font-weight: 800; color: var(--text-primary);">
-                    ${b.kor} <span style="font-size: 13px; color: var(--brand-blue); font-weight: 600; margin-left: 6px;">[${b.num}]</span>
-                  </div>
-                  <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${b.desc}</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${bigNumbers.map(b => `
+            <div class="example-phrase-card">
+              <div>
+                <div style="font-size: 16px; font-weight: 800; color: var(--text-primary);">
+                  ${b.kor} <span style="font-size: 13px; color: var(--brand-blue); font-weight: 600; margin-left: 6px;">[${b.num}]</span>
                 </div>
-                <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.kor}')" title="Сонсох">🔊</button>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${b.desc}</div>
               </div>
-            `).join('')}
-          </div>
-          <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.45;">
-            💡 <strong>Санамж:</strong> Солонгос хэлэнд том тоог 10,000 буюу <strong>만</strong>-аар багцалдаг. 100,000 = 10 ширхэг 만 (십만), 1,000,000 = 100 ширхэг 만 (백만) болно.
-          </div>
+              <button class="quiz-audio-btn" type="button" onclick="event.stopPropagation(); window.SpeechEngine.speak('${b.kor}')" title="Сонсох">🔊</button>
+            </div>
+          `).join('')}
         </div>
-      ` : ''}
+        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.45;">
+          💡 <strong>Санамж:</strong> Солонгос хэлэнд том тоог 10,000 буюу <strong>만</strong>-аар багцалдаг. 100,000 = 10 ширхэг 만 (십만), 1,000,000 = 100 ширхэг 만 (백만) болно.
+        </div>
+      </div>
     `;
   },
 
