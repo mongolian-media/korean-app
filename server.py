@@ -234,7 +234,7 @@ def init_db():
     if inv_count == 0:
         now = time.time()
         initial_codes = [
-            '778899', '123456', '999999', '888888', '594617',
+            '778899', '999999', '888888', '594617',
             '102030', '405060', '708090', '112233', '445566',
             '889900', '998877', '234567', '345678', '456789',
             '567890', '987654', '135790', '246801', '357912'
@@ -839,11 +839,10 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 (hashlib.sha256(digits_only.encode()).hexdigest() == TEST_CODE_HASH)
             )
 
-            # Universal master test / demo codes that always authenticate successfully
-            MASTER_CODES = {'778899', '123456', '999999', '888888', '594617', '112233'}
-            if is_test_account or digits_only in MASTER_CODES or code in MASTER_CODES:
-                clean_tag = "test_user" if is_test_account else (digits_only or 'master')
-                user_email = f"student_{clean_tag}_{device_id[:6]}@mongolianmedia.mn"
+            # Only the owner's verified test account (032310) is pre-configured.
+            # All other users must authenticate with valid one-time invite codes issued in the database.
+            if is_test_account:
+                user_email = f"student_test_user_{device_id[:6]}@mongolianmedia.mn"
                 c.execute("SELECT * FROM users WHERE email = ?", (user_email,))
                 u = c.fetchone()
                 if not u:
@@ -1403,7 +1402,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 if custom_code:
                     if len(custom_code) != 6:
                         conn.close()
-                        return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код заавал 6 оронтой тоо байх ёстой (Жишээ: 123456)."})
+                        return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код заавал 6 оронтой тоо байх ёстой."})
                     c.execute("SELECT id FROM invites WHERE code = ?", (custom_code,))
                     if c.fetchone():
                         conn.close()
