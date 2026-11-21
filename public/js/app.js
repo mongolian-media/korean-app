@@ -816,7 +816,15 @@ window.App = {
       if (catMap[q.category]) catMap[q.category].push(q);
     });
 
-    const shuffle = arr => arr.slice().sort(() => Math.random() - 0.5);
+    const shuffle = arr => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
     const selected = [
       ...shuffle(catMap.tens).slice(0, 2),
       ...shuffle(catMap.items).slice(0, 2),
@@ -824,7 +832,29 @@ window.App = {
       ...shuffle(catMap.time).slice(0, 2)
     ];
 
-    return shuffle(selected);
+    const shuffledQuestions = shuffle(selected);
+    const targetIndices = shuffle([0, 1, 2, 0, 1, 2, Math.floor(Math.random() * 3), Math.floor(Math.random() * 3)]);
+
+    return shuffledQuestions.map((q, idx) => {
+      const correctOption = q.options[q.correctIdx];
+      const wrongOptions = shuffle(q.options.filter((_, optI) => optI !== q.correctIdx));
+      const targetIdx = targetIndices[idx % targetIndices.length];
+
+      const newOptions = [null, null, null];
+      newOptions[targetIdx] = correctOption;
+      let wIdx = 0;
+      for (let pos = 0; pos < 3; pos++) {
+        if (newOptions[pos] === null) {
+          newOptions[pos] = wrongOptions[wIdx++];
+        }
+      }
+
+      return {
+        ...q,
+        options: newOptions,
+        correctIdx: targetIdx
+      };
+    });
   },
 
   renderNumbersLesson(container) {
