@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/app-icon-512.png">
   <link rel="shortcut icon" type="image/png" href="/favicon.png">
   <title>MONGOLIAN MEDIA — Солонгос хэлний сургалт</title>
-  <link rel="stylesheet" href="css/glassmorphism.css?v=79">
+  <link rel="stylesheet" href="css/glassmorphism.css?v=80">
 </head>
 <body>
   <!-- Atmospheric Sunset Rider Wallpaper Background -->
@@ -25,7 +25,7 @@
 
   <!-- Fullscreen 9:16 Intro Video Overlay -->
   <div id="intro-overlay">
-    <button id="intro-audio-btn" class="intro-ctrl-btn intro-audio-btn" type="button" onclick="App.toggleIntroAudio()" title="Дуу асаах">
+    <button id="intro-audio-btn" class="intro-ctrl-btn intro-audio-btn" type="button" onclick="App.toggleIntroAudio(event)" title="Дуу асаах">
       🔈 <span>Дуу асаах</span>
     </button>
     <video
@@ -35,11 +35,11 @@
       webkit-playsinline
       muted
       preload="auto"
-      src="assets/intro.mp4?v=71"
+      src="assets/intro.mp4?v=80"
     ></video>
   </div>
   <script>
-    if (sessionStorage.getItem('mm_intro_shown') === '1' || /FBAN|FBAV|Instagram|Messenger|Line|MicroMessenger|Snapchat/i.test(navigator.userAgent || '')) {
+    if (sessionStorage.getItem('mm_intro_shown') === '1') {
       var ov = document.getElementById('intro-overlay');
       if (ov) ov.style.display = 'none';
     }
@@ -120,12 +120,12 @@
   </div>
 
   <!-- Application Logic Scripts -->
-  <script src="js/pwa.js?v=79"></script>
-  <script src="js/api.js?v=79"></script>
-  <script src="js/storage_manager.js?v=79"></script>
-  <script src="js/speech_engine.js?v=79"></script>
-  <script src="js/alphabet_data.js?v=79"></script>
-  <script src="js/curriculum_data.js?v=79"></script>
-  <script src="js/app.js?v=79"></script>
+  <script src="js/pwa.js?v=80"></script>
+  <script src="js/api.js?v=80"></script>
+  <script src="js/storage_manager.js?v=80"></script>
+  <script src="js/speech_engine.js?v=80"></script>
+  <script src="js/alphabet_data.js?v=80"></script>
+  <script src="js/curriculum_data.js?v=80"></script>
+  <script src="js/app.js?v=80"></script>
 </body>
 </html>
