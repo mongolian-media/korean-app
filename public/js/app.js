@@ -970,7 +970,7 @@ window.App = {
             <b>💡 Хэрэглэх нөхцөл:</b> ${currentSentence.context}
           </div>
 
-          <!-- Audio & Mic Controls -->
+          <!-- Audio Controls -->
           <div class="card-audio-actions">
             <button class="btn-glass" onclick="window.SpeechEngine.speak('${currentSentence.ko}')">
               🔊 Сонсох
@@ -978,16 +978,7 @@ window.App = {
             <button class="btn-glass" onclick="window.SpeechEngine.speakSlow('${currentSentence.ko}')">
               🐢 Удаанаар (0.72x)
             </button>
-            <button class="btn-glass btn-record" id="btn-mic-card" onclick="App.toggleCardRecording('${currentSentence.ko}')">
-              🎙️ Дагаж хэлэх
-            </button>
-            <button class="btn-glass" id="btn-play-rec" style="display: none;" onclick="window.SpeechEngine.playUserRecording()">
-              ▶️ Миний бичлэг
-            </button>
           </div>
-
-          <!-- Assessment Result Area -->
-          <div id="sentence-assessment-box" style="display: none;"></div>
 
           <!-- Vocabulary Breakdown -->
           ${currentSentence.vocab && currentSentence.vocab.length > 0 ? `
@@ -1599,12 +1590,36 @@ window.App = {
               ➔ Дараагийн өдөр (${nextDayId}-р өдөр) рүү шилжих
             </button>
           ` : ''}
+          ${correctCount < 5 ? `
+            <button class="btn-glass" style="padding: 12px 20px; font-weight: 700; color: var(--brand-blue); border-color: rgba(37,99,235,0.4);" onclick="App.retryDayQuiz(${dayId});">
+              🔄 Дахин хийх
+            </button>
+          ` : ''}
           <button class="btn-glass" style="padding: 12px 20px;" onclick="App.closeModal(); App.navigate('home');">
             🏠 Нүүр хуудас руу буцах
           </button>
         </div>
       </div>
     `);
+  },
+
+  retryDayQuiz(dayId) {
+    this.closeModal();
+    dayId = parseInt(dayId) || this.currentDayId || 1;
+    const state = window.StorageManager.get();
+    if (state.dayQuizAnswers && state.dayQuizAnswers[dayId]) {
+      delete state.dayQuizAnswers[dayId];
+      window.StorageManager.save(state);
+    }
+    this.currentDayId = dayId;
+    this.currentStep = 5; // Step 5: 6. Сорил
+    this.currentSentenceIdx = 0;
+    const curr = this.curriculum || window.CURRICULUM_DATA || [];
+    const day = curr.find(d => d.id === dayId);
+    if (day) {
+      this.renderDayLesson(document.getElementById('main-content'), dayId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   },
 
   // =============================================================
@@ -2078,8 +2093,8 @@ window.App = {
               </svg>
             </div>
             <div>
-              <strong style="font-size: 14px; display: block;">MONGOLIAN MEDIA Facebook</strong>
-              <span style="font-size: 12px; color: var(--text-muted);">fb.com/MediaGorrr албан ёсны хуудсаар холбогдох</span>
+              <strong style="font-size: 14px; display: block;">СОЛОНГОС ХЭЛНИЙ АПП Facebook</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">Албан ёсны Facebook хуудсаар холбогдох</span>
             </div>
           </div>
           <span style="font-size: 16px; color: #1877F2;">➔</span>
