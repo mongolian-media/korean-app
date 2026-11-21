@@ -77,18 +77,12 @@ window.App = {
 
   _introDismissed: false,
   _introSafetyTimer: null,
+  _lastToggleTime: 0,
 
   initIntro() {
     const overlay = document.getElementById('intro-overlay');
     const video = document.getElementById('intro-video');
     if (!overlay || !video) return;
-
-    // Fast bypass if inside in-app browser (Messenger, Facebook, Instagram)
-    const isSocialInApp = /FBAN|FBAV|Instagram|Messenger|Line|MicroMessenger|Snapchat/i.test(navigator.userAgent || '');
-    if (isSocialInApp) {
-      overlay.style.display = 'none';
-      return;
-    }
 
     // 1. Session check: Only play once per fresh session (closed & reopened)
     if (sessionStorage.getItem('mm_intro_shown') === '1') {
@@ -98,11 +92,6 @@ window.App = {
 
     // Mark as shown for this session
     sessionStorage.setItem('mm_intro_shown', '1');
-
-    // Click anywhere on overlay to dismiss immediately
-    overlay.addEventListener('click', () => {
-      this.dismissIntro(true);
-    });
 
     // 2. Setup video event listeners
     video.onended = () => {
@@ -114,28 +103,55 @@ window.App = {
       this.dismissIntro(true);
     };
 
-    // 3. Safety fallback timer (shortened to 3s max to prevent any hang)
+    // When video starts playing, wait until playback finishes completely
+    video.onplaying = () => {
+      if (this._introSafetyTimer) clearTimeout(this._introSafetyTimer);
+      const remaining = (video.duration && !isNaN(video.duration) && video.duration > 0)
+        ? (video.duration - video.currentTime + 1.5) * 1000
+        : 9500;
+      this._introSafetyTimer = setTimeout(() => {
+        this.dismissIntro();
+      }, Math.max(3000, remaining));
+    };
+
+    // 3. Safety fallback timer (10s max if video completely fails or stalls before playing)
     this._introSafetyTimer = setTimeout(() => {
       this.dismissIntro(true);
-    }, 3000);
+    }, 10000);
 
     // 4. Autoplay with audio muted & playsinline
     video.muted = true;
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn('[Intro Video] Autoplay prevented, dismissing immediately:', err);
-        this.dismissIntro(true);
+        console.warn('[Intro Video] Autoplay prevented:', err);
+        // If autoplay is blocked by browser policy and user doesn't interact within 5s, proceed
+        setTimeout(() => {
+          if (video && video.paused && !this._introDismissed) {
+            this.dismissIntro(true);
+          }
+        }, 5000);
       });
     }
   },
 
-  toggleIntroAudio() {
+  toggleIntroAudio(e) {
+    if (e) {
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+    }
+    const now = Date.now();
+    if (now - this._lastToggleTime < 350) return;
+    this._lastToggleTime = now;
+
     const video = document.getElementById('intro-video');
     const btn = document.getElementById('intro-audio-btn');
     if (!video) return;
 
     video.muted = !video.muted;
+    if (video.paused) {
+      video.play().catch(() => {});
+    }
     if (btn) {
       if (video.muted) {
         btn.innerHTML = '🔈 <span>Дуу асаах</span>';
