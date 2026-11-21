@@ -2914,7 +2914,7 @@ window.App = {
             </div>
 
             <div style="background: rgba(37, 99, 235, 0.06); border: 1px dashed rgba(37, 99, 235, 0.3); border-radius: 12px; padding: 14px 18px; margin-top: 24px; font-size: 13px; text-align: left; line-height: 1.6; max-width: 440px; margin-left: auto; margin-right: auto;">
-              💳 <b>Код авах данс:</b> Хаан Банк <b>5946179010</b> (Н.Батцогт)<br>
+              💳 <b>Код авах данс:</b> Хаан Банк <b>5252631771</b> (Iban: 65 000 500, Н.Батцогт)<br>
               Төлбөр (49,000₮) шилжүүлсний дараа Mongolian Media танд 1 удаагийн кодоо мессенжер эсвэл утсаар өгнө. Нэг удаа код оруулснаар онлайн болон офлайн бүх горимд байнгын нээлттэй болно.
             </div>
           </div>
@@ -3719,7 +3719,7 @@ window.App = {
         <button class="btn-primary" style="padding: 13px 18px; font-size: 15px; font-weight: 700;" onclick="App.submitCodeLogin()">Нэвтрэх ба Хичээл эхлэх ➔</button>
 
         <div style="background: rgba(37, 99, 235, 0.06); border: 1px dashed rgba(37, 99, 235, 0.3); border-radius: 10px; padding: 10px 12px; margin-top: 14px; font-size: 12px; text-align: left; line-height: 1.5;">
-          💳 <b>Код авах данс:</b> Хаан Банк <b>5946179010</b> (Н.Батцогт)<br>
+          💳 <b>Код авах данс:</b> Хаан Банк <b>5252631771</b> (Iban: 65 000 500, Н.Батцогт)<br>
           Төлбөр (49,000₮) шилжүүлсний дараа Mongolian Media танд 1 удаагийн кодоо мессенжер эсвэл утсаар өгнө.
         </div>
 
