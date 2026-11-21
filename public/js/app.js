@@ -446,10 +446,22 @@ window.App = {
           </div>
         </div>
 
-        <!-- 1. Хангыл үсгийн хичээл -->
+        <!-- 1. 90 өдрийн хөтөлбөр (Өгүүлбэр) -->
+        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('lessons-list')">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="icon-3d icon-3d-card icon-3d-sentence">📚</div>
+            <div>
+              <strong style="display: block; font-size: 15px;">90 өдрийн хөтөлбөр</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">🌟 1-р шат (1–30) • 🚀 2-р шат (31–60) • 👑 3-р шат (61–90)</span>
+            </div>
+          </div>
+          <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
+        </div>
+
+        <!-- 2. Хангыл үсгийн хичээл (Үсэг) -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('alphabet')">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <span style="font-size: 28px;">🔤</span>
+            <div class="icon-3d icon-3d-card icon-3d-alphabet">abc</div>
             <div>
               <strong style="display: block; font-size: 15px;">Хангыл үсгийн хичээл</strong>
               <span style="font-size: 12px; color: var(--text-muted);">
@@ -460,10 +472,10 @@ window.App = {
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
         </div>
 
-        <!-- 2. Тооны хичээл -->
+        <!-- 3. Тооны хичээл (Тоо) -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('numbers')">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <span style="font-size: 28px;">🔢</span>
+            <div class="icon-3d icon-3d-card icon-3d-numbers">123</div>
             <div>
               <strong style="display: block; font-size: 15px;">Тооны хичээл</strong>
               <span style="font-size: 12px; color: var(--text-muted);">Хятад ба уугуул солонгос тоо, үнэ ба эд зүйл тоолох</span>
@@ -472,13 +484,13 @@ window.App = {
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
         </div>
 
-        <!-- 3. 90 өдрийн хөтөлбөр -->
-        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('lessons-list')">
+        <!-- 4. Солонгос үгийн сан (Үгс) -->
+        <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('vocab')">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <span style="font-size: 28px;">📚</span>
+            <div class="icon-3d icon-3d-card icon-3d-vocab">⭐</div>
             <div>
-              <strong style="display: block; font-size: 15px;">90 өдрийн хөтөлбөр</strong>
-              <span style="font-size: 12px; color: var(--text-muted);">🌟 1-р шат (1–30) • 🚀 2-р шат (31–60) • 👑 3-р шат (61–90)</span>
+              <strong style="display: block; font-size: 15px;">Солонгос үгийн сан</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">1,443 сэдэвчилсэн үгс, хайлт, цэвэр дуудлага сонсох</span>
             </div>
           </div>
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
