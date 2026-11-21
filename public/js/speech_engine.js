@@ -61,7 +61,7 @@ window.SpeechEngine = {
       .replace(/\[.*?\]/g, '') // remove bracketed comments like [Зөвхөн дотно найздаа]
       .replace(/\(.*?\)/g, '') // remove parenthesized acronyms
       .replace(/['"“”‘’]/g, '') // remove quotes
-      .replace(/[^가-힣0-9.,?!~ \n]/g, ' ') // keep Korean characters, numbers, basic punctuation
+      .replace(/[^가-힣ㄱ-ㅣ0-9.,?!~ \n]/g, ' ') // keep Korean characters (including jamo letters), numbers, basic punctuation
       .replace(/\s+/g, ' ')
       .trim();
   },
