@@ -1,7 +1,7 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v67)
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v68)
 // Built strictly on drive.uugiscar.com offline architecture with Safari 206 Audio Range support
 
-const VERSION = 'v67';
+const VERSION = 'v68';
 const SHELL_CACHE = `shell-${VERSION}`;
 const IMAGE_CACHE = 'images-v2';
 const AUDIO_CACHE = 'mm-korean-audio-v1';
