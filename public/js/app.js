@@ -69,8 +69,102 @@ window.App = {
     return false;
   },
 
+  _introDismissed: false,
+  _introSafetyTimer: null,
+
+  initIntro() {
+    const overlay = document.getElementById('intro-overlay');
+    const video = document.getElementById('intro-video');
+    if (!overlay || !video) return;
+
+    // 1. Session check: Only play once per fresh session (closed & reopened)
+    if (sessionStorage.getItem('mm_intro_shown') === '1') {
+      overlay.style.display = 'none';
+      return;
+    }
+
+    // Mark as shown for this session
+    sessionStorage.setItem('mm_intro_shown', '1');
+
+    // 2. Setup video event listeners
+    video.onended = () => {
+      this.dismissIntro();
+    };
+
+    video.onerror = () => {
+      console.warn('[Intro Video] Playback/load error, graceful fallback to main screen');
+      this.dismissIntro(true);
+    };
+
+    // 3. Safety fallback timer (video is ~8s, dismiss after 9.5s max to avoid any hang)
+    this._introSafetyTimer = setTimeout(() => {
+      this.dismissIntro();
+    }, 9500);
+
+    // 4. Autoplay with audio muted & playsinline
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn('[Intro Video] Autoplay prevented or deferred:', err);
+      });
+    }
+  },
+
+  toggleIntroAudio() {
+    const video = document.getElementById('intro-video');
+    const btn = document.getElementById('intro-audio-btn');
+    if (!video) return;
+
+    video.muted = !video.muted;
+    if (btn) {
+      if (video.muted) {
+        btn.innerHTML = '🔈 <span>Дуу асаах</span>';
+        btn.title = 'Дуу асаах';
+      } else {
+        btn.innerHTML = '🔊 <span>Дуу хаах</span>';
+        btn.title = 'Дуу хаах';
+      }
+    }
+  },
+
+  dismissIntro(immediate = false) {
+    if (this._introDismissed) return;
+    this._introDismissed = true;
+
+    if (this._introSafetyTimer) {
+      clearTimeout(this._introSafetyTimer);
+      this._introSafetyTimer = null;
+    }
+
+    const overlay = document.getElementById('intro-overlay');
+    const video = document.getElementById('intro-video');
+
+    if (video) {
+      try {
+        video.pause();
+      } catch (e) {}
+    }
+
+    if (!overlay) return;
+
+    if (immediate) {
+      overlay.style.display = 'none';
+      return;
+    }
+
+    // Smooth ~500ms crossfade into the pre-rendered main application screen
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+    }, 520);
+  },
+
   async init() {
     try {
+      // 0. Initialize Intro Video Overlay
+      this.initIntro();
+
       // 1. Load Local State
       const state = window.StorageManager.get();
       this.currentDayId = state.activeDay || 1;
