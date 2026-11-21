@@ -83,6 +83,13 @@ window.App = {
     const video = document.getElementById('intro-video');
     if (!overlay || !video) return;
 
+    // Fast bypass if inside in-app browser (Messenger, Facebook, Instagram)
+    const isSocialInApp = /FBAN|FBAV|Instagram|Messenger|Line|MicroMessenger|Snapchat/i.test(navigator.userAgent || '');
+    if (isSocialInApp) {
+      overlay.style.display = 'none';
+      return;
+    }
+
     // 1. Session check: Only play once per fresh session (closed & reopened)
     if (sessionStorage.getItem('mm_intro_shown') === '1') {
       overlay.style.display = 'none';
@@ -91,6 +98,11 @@ window.App = {
 
     // Mark as shown for this session
     sessionStorage.setItem('mm_intro_shown', '1');
+
+    // Click anywhere on overlay to dismiss immediately
+    overlay.addEventListener('click', () => {
+      this.dismissIntro(true);
+    });
 
     // 2. Setup video event listeners
     video.onended = () => {
@@ -102,17 +114,18 @@ window.App = {
       this.dismissIntro(true);
     };
 
-    // 3. Safety fallback timer (video is ~8s, dismiss after 9.5s max to avoid any hang)
+    // 3. Safety fallback timer (shortened to 3s max to prevent any hang)
     this._introSafetyTimer = setTimeout(() => {
-      this.dismissIntro();
-    }, 9500);
+      this.dismissIntro(true);
+    }, 3000);
 
     // 4. Autoplay with audio muted & playsinline
     video.muted = true;
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn('[Intro Video] Autoplay prevented or deferred:', err);
+        console.warn('[Intro Video] Autoplay prevented, dismissing immediately:', err);
+        this.dismissIntro(true);
       });
     }
   },
