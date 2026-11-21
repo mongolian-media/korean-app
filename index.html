@@ -23,6 +23,31 @@
     <div class="app-wallpaper-tint"></div>
   </div>
 
+  <!-- Fullscreen 9:16 Intro Video Overlay -->
+  <div id="intro-overlay">
+    <button id="intro-audio-btn" class="intro-ctrl-btn intro-audio-btn" type="button" onclick="App.toggleIntroAudio()" title="Дуу асаах">
+      🔈 <span>Дуу асаах</span>
+    </button>
+    <button id="intro-skip-btn" class="intro-ctrl-btn intro-skip-btn" type="button" onclick="App.dismissIntro()" title="Алгасах">
+      Алгасах ✕
+    </button>
+    <video
+      id="intro-video"
+      poster="assets/intro_poster.jpg"
+      playsinline
+      webkit-playsinline
+      muted
+      preload="auto"
+      src="assets/intro.mp4"
+    ></video>
+  </div>
+  <script>
+    if (sessionStorage.getItem('mm_intro_shown') === '1') {
+      var ov = document.getElementById('intro-overlay');
+      if (ov) ov.style.display = 'none';
+    }
+  </script>
+
   <!-- Main Container -->
   <div class="app-container">
     <!-- PWA Installation Banner -->

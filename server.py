@@ -459,7 +459,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
                 self.send_header('Content-Length', str(len(man_bytes)))
                 self.send_header('Cache-Control', 'public, max-age=0, must-revalidate')
-                self.send_header('ETag', '"v63-manifest"')
+                self.send_header('ETag', '"v67-manifest"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(man_bytes)
@@ -475,7 +475,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(idx_bytes)))
                 self.send_header('Cache-Control', 'no-cache, must-revalidate')
-                self.send_header('ETag', '"v63-html"')
+                self.send_header('ETag', '"v67-html"')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(idx_bytes)
@@ -531,16 +531,40 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                 '.ico': 'image/x-icon',
                 '.svg': 'image/svg+xml',
                 '.woff2': 'font/woff2',
-                '.mp3': 'audio/mpeg'
+                '.mp3': 'audio/mpeg',
+                '.mp4': 'video/mp4'
             }
             ctype = mime_map.get(ext)
             if ctype:
                 try:
+                    total_len = os.path.getsize(file_path)
+                    range_header = self.headers.get('Range')
+                    if range_header and range_header.startswith('bytes='):
+                        ranges = range_header.replace('bytes=', '').split('-')
+                        start = int(ranges[0]) if ranges[0] else 0
+                        end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else total_len - 1
+                        if start < total_len and end < total_len and start <= end:
+                            chunk_len = end - start + 1
+                            with open(file_path, 'rb') as f:
+                                f.seek(start)
+                                chunk = f.read(chunk_len)
+                            self.send_response(206)
+                            self.send_header('Content-Type', ctype)
+                            self.send_header('Content-Range', f'bytes {start}-{end}/{total_len}')
+                            self.send_header('Content-Length', str(chunk_len))
+                            self.send_header('Accept-Ranges', 'bytes')
+                            self.send_header('Cache-Control', 'public, max-age=604800')
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.end_headers()
+                            self.wfile.write(chunk)
+                            return
+
                     with open(file_path, 'rb') as f:
                         file_data = f.read()
                     self.send_response(200)
                     self.send_header('Content-Type', ctype)
-                    self.send_header('Content-Length', str(len(file_data)))
+                    self.send_header('Content-Length', str(total_len))
+                    self.send_header('Accept-Ranges', 'bytes')
                     self.send_header('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
