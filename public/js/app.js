@@ -2894,6 +2894,35 @@ window.App = {
     if (!container) container = document.getElementById('main-content');
     if (!container) return;
 
+    if (!this.hasActiveAccess()) {
+      container.innerHTML = `
+        <div class="fade-in">
+          <div class="glass-card" style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 54px; margin-bottom: 12px;">🔒</div>
+            <span class="sentence-badge" style="background: rgba(37, 99, 235, 0.15); color: var(--brand-blue); margin-bottom: 12px; display: inline-block;">
+              СОЛОНГОС ХЭЛНИЙ ҮГИЙН САН
+            </span>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Үгс болон өгүүлбэрийн сан түгжээтэй байна
+            </h2>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 440px; margin: 0 auto 24px;">
+              90 өдрийн сургалтын бүх 900 өгүүлбэр, тэдгээрийн үгийн сан болон солонгос аудио дуудлагыг ашиглахын тулд Mongolian Media-аас авсан <b>1 удаагийн нэвтрэх код</b>-оо оруулан эрхээ нээнэ үү. (Офлайн болон онлайн аль алинд нь ажиллана).
+            </p>
+
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn-primary" style="max-width: 280px;" onclick="App.openLoginModal()">🎟️ 1 удаагийн кодоор нээх</button>
+            </div>
+
+            <div style="background: rgba(37, 99, 235, 0.06); border: 1px dashed rgba(37, 99, 235, 0.3); border-radius: 12px; padding: 14px 18px; margin-top: 24px; font-size: 13px; text-align: left; line-height: 1.6; max-width: 440px; margin-left: auto; margin-right: auto;">
+              💳 <b>Код авах данс:</b> Хаан Банк <b>5946179010</b> (Н.Батцогт)<br>
+              Төлбөр (49,000₮) шилжүүлсний дараа Mongolian Media танд 1 удаагийн кодоо мессенжер эсвэл утсаар өгнө. Нэг удаа код оруулснаар онлайн болон офлайн бүх горимд байнгын нээлттэй болно.
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     const state = window.StorageManager.get();
     const bookmarked = state.bookmarkedVocab || [];
     const allVocab = this.getAllVocabList();
@@ -3756,6 +3785,7 @@ window.App = {
       const container = document.getElementById('main-content');
       if (this.currentView === 'alphabet') this.renderAlphabet(container);
       else if (this.currentView === 'numbers') this.renderNumbersLesson(container);
+      else if (this.currentView === 'vocab') this.renderVocab(container);
       else if (this.currentView && this.currentView.startsWith('day-')) this.renderDayLesson(container, this.currentDayId || 1);
       else this.navigate(this.currentView || 'lessons-list');
     };
@@ -3785,6 +3815,7 @@ window.App = {
         const container = document.getElementById('main-content');
         if (this.currentView === 'alphabet') this.renderAlphabet(container);
         else if (this.currentView === 'numbers') this.renderNumbersLesson(container);
+        else if (this.currentView === 'vocab') this.renderVocab(container);
         else if (this.currentView && this.currentView.startsWith('day-')) this.renderDayLesson(container, this.currentDayId || 1);
         else this.navigate('lessons-list');
       } else {
