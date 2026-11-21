@@ -108,6 +108,20 @@ body {
   z-index: 0;
 }
 
+.app-wallpaper-container::after {
+  content: '';
+  position: fixed;
+  bottom: -40px;
+  right: -40px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(37, 99, 235, 0.18) 50%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(40px);
+}
+
 .app-wallpaper-bg {
   position: absolute;
   inset: 0;
@@ -161,16 +175,16 @@ body.dark-mode .app-wallpaper-tint {
   max-width: 100%;
   box-sizing: border-box;
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.32), 0 6px 14px -2px rgba(0, 0, 0, 0.18), inset 0 1px 1.5px rgba(255, 255, 255, 0.35);
   border-radius: var(--radius-lg);
   padding: 18px 18px;
   margin-bottom: 18px;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
 .glass-card:hover {
@@ -351,10 +365,11 @@ body.dark-mode .mascot-bubble h3 {
 .segmented-pills {
   display: flex;
   align-items: center;
-  background: var(--pill-bg);
-  padding: 4px;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 5px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
   gap: 6px;
   margin-bottom: 18px;
   width: 100%;
@@ -374,23 +389,33 @@ body.dark-mode .mascot-bubble h3 {
 
 .pill-btn {
   flex: 0 0 auto !important;
-  padding: 7px 14px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 1px #ffffff;
 }
 
-.pill-btn.active {
-  background: var(--pill-active-bg);
-  color: var(--pill-active-text);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+body.dark-mode .pill-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.pill-btn.active, body.dark-mode .pill-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.5), inset 0 1px 1.5px rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-1px) scale(1.02);
 }
 
 /* Quick Resume / Hero Card */
@@ -751,21 +776,21 @@ body.dark-mode .mongolian-meaning {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(64px + env(safe-area-inset-bottom, 0px));
-  min-height: calc(64px + env(safe-area-inset-bottom, 0px));
-  background: var(--glass-bg);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-top: 1px solid var(--glass-border);
+  height: calc(66px + env(safe-area-inset-bottom, 0px));
+  min-height: calc(66px + env(safe-area-inset-bottom, 0px));
+  background: rgba(12, 18, 32, 0.88);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-around;
-  padding-top: 8px;
+  padding-top: 4px;
   padding-left: 8px;
   padding-right: 8px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 100;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .nav-item {
@@ -776,31 +801,36 @@ body.dark-mode .mongolian-meaning {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 12px;
-  transition: all 0.15s ease;
-  min-width: 54px;
+  padding: 6px 14px;
+  border-radius: 18px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 60px;
 }
 
 .nav-item .nav-icon {
   font-size: 20px;
   margin-bottom: 2px;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-item.active {
-  color: var(--brand-blue);
+  color: #38bdf8;
+  background: rgba(37, 99, 235, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 
 body.dark-mode .nav-item.active {
   color: #38bdf8;
+  background: rgba(37, 99, 235, 0.22);
+  border-color: rgba(56, 189, 248, 0.3);
 }
 
 .nav-item.active .nav-icon {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.08);
 }
 
 /* Modals */
@@ -905,14 +935,43 @@ body.dark-mode .nav-item.active {
   transform: scale(0.98);
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Animations: Smooth side-slide with cascading staggered child entrance */
+@keyframes screenSlideIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(32px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .fade-in {
-  animation: fadeIn 0.25s ease-out;
+  width: 100%;
+  animation: screenSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered cascading entrance for child elements */
+.fade-in > * {
+  animation: screenSlideIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.fade-in > *:nth-child(1) { animation-delay: 0.02s; }
+.fade-in > *:nth-child(2) { animation-delay: 0.06s; }
+.fade-in > *:nth-child(3) { animation-delay: 0.10s; }
+.fade-in > *:nth-child(4) { animation-delay: 0.14s; }
+.fade-in > *:nth-child(5) { animation-delay: 0.18s; }
+.fade-in > *:nth-child(6) { animation-delay: 0.22s; }
+.fade-in > *:nth-child(7) { animation-delay: 0.26s; }
+.fade-in > *:nth-child(8) { animation-delay: 0.30s; }
+.fade-in > *:nth-child(n+9) { animation-delay: 0.34s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in, .fade-in > * {
+    animation: none !important;
+  }
 }
 
 /* PWA Install Banner */
