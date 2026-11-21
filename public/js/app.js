@@ -2513,7 +2513,7 @@ window.App = {
 
         <div class="form-group" style="margin-bottom: 18px;">
           <label class="form-label">🔑 1 удаагийн 6 оронтой нэвтрэх код:</label>
-          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-access-code" class="form-input" placeholder="123456" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-access-code" class="form-input" placeholder="••••••" style="font-weight: 800; letter-spacing: 6px; font-size: 24px; text-align: center;">
           <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
             *(Хэрэв танд нэвтрэх код байхгүй бол сургалтын төлбөрөө шилжүүлэн Mongolian Media-аас 6 оронтой тоон кодоо авна уу).*
           </span>
