@@ -446,12 +446,12 @@ window.App = {
           </div>
         </div>
 
-        <!-- 1. 90 өдрийн хөтөлбөр (Өгүүлбэр) -->
+        <!-- 1. Сонсох өгүүлбэрийн хичээл (Өгүүлбэр) -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('lessons-list')">
           <div style="display: flex; align-items: center; gap: 14px;">
             <div class="icon-3d icon-3d-card icon-3d-sentence">📚</div>
             <div>
-              <strong style="display: block; font-size: 15px;">90 өдрийн хөтөлбөр</strong>
+              <strong style="display: block; font-size: 15px;">Сонсох өгүүлбэрийн хичээл</strong>
               <span style="font-size: 12px; color: var(--text-muted);">🌟 1-р шат (1–30) • 🚀 2-р шат (31–60) • 👑 3-р шат (61–90)</span>
             </div>
           </div>
@@ -484,12 +484,12 @@ window.App = {
           <span style="font-size: 18px; color: var(--brand-blue);">➔</span>
         </div>
 
-        <!-- 4. Солонгос үгийн сан (Үгс) -->
+        <!-- 4. Үгс ба өгүүлбэр (Үгс) -->
         <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="App.navigate('vocab')">
           <div style="display: flex; align-items: center; gap: 14px;">
             <div class="icon-3d icon-3d-card icon-3d-vocab">⭐</div>
             <div>
-              <strong style="display: block; font-size: 15px;">Солонгос үгийн сан</strong>
+              <strong style="display: block; font-size: 15px;">Үгс ба өгүүлбэр</strong>
               <span style="font-size: 12px; color: var(--text-muted);">1,443 сэдэвчилсэн үгс, хайлт, цэвэр дуудлага сонсох</span>
             </div>
           </div>
