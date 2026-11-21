@@ -1,7 +1,7 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v64)
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v65)
 // Built strictly on drive.uugiscar.com offline architecture with Safari 206 Audio Range support
 
-const VERSION = 'v64';
+const VERSION = 'v65';
 const SHELL_CACHE = `shell-${VERSION}`;
 const IMAGE_CACHE = 'images-v2';
 const AUDIO_CACHE = 'mm-korean-audio-v1';
@@ -44,7 +44,9 @@ const SHELL = [
   'assets/sunset_rider_bg.jpg',
   '/assets/sunset_rider_bg.jpg',
   'assets/logo.jpg',
-  '/assets/logo.jpg'
+  '/assets/logo.jpg',
+  'assets/mon_kor_logo.png',
+  '/assets/mon_kor_logo.png'
 ];
 
 // 1. Install: Atomically cache all shell files natively
