@@ -1,7 +1,7 @@
-// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v66)
+// MONGOLIAN MEDIA — Service Worker (Production Offline Engine v67)
 // Built strictly on drive.uugiscar.com offline architecture with Safari 206 Audio Range support
 
-const VERSION = 'v66';
+const VERSION = 'v67';
 const SHELL_CACHE = `shell-${VERSION}`;
 const IMAGE_CACHE = 'images-v2';
 const AUDIO_CACHE = 'mm-korean-audio-v1';
@@ -46,7 +46,11 @@ const SHELL = [
   'assets/logo.jpg',
   '/assets/logo.jpg',
   'assets/mon_kor_logo.png',
-  '/assets/mon_kor_logo.png'
+  '/assets/mon_kor_logo.png',
+  'assets/intro_poster.jpg',
+  '/assets/intro_poster.jpg',
+  'assets/intro.mp4',
+  '/assets/intro.mp4'
 ];
 
 // 1. Install: Atomically cache all shell files natively
@@ -236,6 +240,68 @@ async function handleAudioRequest(request) {
   }
 }
 
+async function handleVideoRequest(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  const url = new URL(request.url);
+  const cacheKey = url.pathname;
+
+  let cachedResponse = await cache.match(cacheKey);
+  if (!cachedResponse) {
+    cachedResponse = await cache.match(request);
+  }
+
+  if (!cachedResponse) {
+    try {
+      const cleanUrl = url.pathname;
+      const netRes = await fetch(cleanUrl);
+      if (netRes && netRes.ok) {
+        await cache.put(cacheKey, netRes.clone());
+        cachedResponse = netRes;
+      } else {
+        return netRes || new Response('Video not available offline', { status: 404 });
+      }
+    } catch (e) {
+      return new Response('Video not available offline', { status: 404 });
+    }
+  }
+
+  const rangeHeader = request.headers.get('Range');
+  if (!rangeHeader) {
+    return cachedResponse;
+  }
+
+  try {
+    const arrayBuffer = await cachedResponse.arrayBuffer();
+    const total = arrayBuffer.byteLength;
+    const parts = rangeHeader.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10) || 0;
+    const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
+
+    if (start >= total || end >= total) {
+      return new Response('', {
+        status: 416,
+        statusText: 'Range Not Satisfiable',
+        headers: { 'Content-Range': `bytes */${total}` }
+      });
+    }
+
+    const chunk = arrayBuffer.slice(start, end + 1);
+    return new Response(chunk, {
+      status: 206,
+      statusText: 'Partial Content',
+      headers: {
+        'Content-Type': cachedResponse.headers.get('Content-Type') || 'video/mp4',
+        'Content-Range': `bytes ${start}-${end}/${total}`,
+        'Content-Length': chunk.byteLength.toString(),
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=31536000'
+      }
+    });
+  } catch (err) {
+    return cachedResponse;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -245,6 +311,12 @@ self.addEventListener('fetch', (event) => {
   // 1. Audio stream caching with 206 Partial Content Range support for Safari
   if (url.pathname === '/api/tts') {
     event.respondWith(handleAudioRequest(request));
+    return;
+  }
+
+  // 2. Intro video Range & offline caching
+  if (url.pathname.endsWith('intro.mp4')) {
+    event.respondWith(handleVideoRequest(request));
     return;
   }
 
