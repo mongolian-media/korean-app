@@ -1,0 +1,15 @@
+name: Keep Render Service Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+        run: |
+          echo "Pinging https://korean-app-ny1w.onrender.com/"
+          curl -s -f -I -m 30 "https://korean-app-ny1w.onrender.com/" || true
