@@ -234,18 +234,18 @@ def init_db():
     inv_count = c.fetchone()['cnt']
     if inv_count == 0:
         now = time.time()
-        initial_codes = [
-            '778899', '999999', '888888', '594617',
-            '102030', '405060', '708090', '112233', '445566',
-            '889900', '998877', '234567', '345678', '456789',
-            '567890', '987654', '135790', '246801', '357912'
-        ]
-        for sc in initial_codes:
+        seeded = []
+        for _ in range(5):
+            while True:
+                sc = str(secrets.randbelow(900000) + 100000)
+                if is_strong_code(sc) and sc not in seeded:
+                    seeded.append(sc)
+                    break
             c.execute('''
             INSERT INTO invites (code, token_hash, is_used, created_by, created_at)
             VALUES (?, ?, 0, 'SYSTEM_INIT', ?)
             ''', (sc, hashlib.sha256(sc.encode('utf-8')).hexdigest(), now))
-        print(f"[+] Seeded {len(initial_codes)} initial 6-digit access codes into database.")
+        print(f"[+] Seeded {len(seeded)} cryptographically secure 6-digit access codes into database.")
 
     conn.commit()
     conn.close()
@@ -253,6 +253,93 @@ def init_db():
 # -------------------------------------------------------------
 # Security & Hash Helpers
 # -------------------------------------------------------------
+def is_strong_code(code_str):
+    """Ensure access code cannot be easily guessed or brute-forced."""
+    if not code_str or len(code_str) != 6 or not code_str.isdigit():
+        return False
+    # Avoid repetitive digits (e.g. 111111, 222222, 112233)
+    if len(set(code_str)) <= 3:
+        return False
+    # Avoid straight sequences
+    trivial_seqs = ["012345", "123456", "234567", "345678", "456789", "567890",
+                    "987654", "876543", "765432", "654321", "543210"]
+    if code_str in trivial_seqs:
+        return False
+    # Avoid patterned pairs (e.g. 121212, 102030, 203040)
+    if code_str[:2] == code_str[2:4] or code_str[2:4] == code_str[4:]:
+        return False
+    return True
+
+# -------------------------------------------------------------
+# Rate Limiting & Brute-Force Protection
+# -------------------------------------------------------------
+class SecurityRateLimiter:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.code_failures = {}    # key -> list of failure timestamps
+        self.code_lockouts = {}    # key -> unlock timestamp
+        self.admin_failures = {}   # key -> list of failure timestamps
+        self.admin_lockouts = {}   # key -> unlock timestamp
+
+    def is_code_locked(self, key):
+        now = time.time()
+        with self.lock:
+            unlock_time = self.code_lockouts.get(key, 0)
+            if now < unlock_time:
+                return True, int(unlock_time - now)
+            elif key in self.code_lockouts:
+                del self.code_lockouts[key]
+            return False, 0
+
+    def record_code_failure(self, key, max_attempts=5, window_sec=600, lockout_sec=900):
+        now = time.time()
+        with self.lock:
+            timestamps = self.code_failures.get(key, [])
+            timestamps = [t for t in timestamps if now - t < window_sec]
+            timestamps.append(now)
+            self.code_failures[key] = timestamps
+            if len(timestamps) >= max_attempts:
+                self.code_lockouts[key] = now + lockout_sec
+                self.code_failures[key] = []
+                return True, lockout_sec
+            remaining = max_attempts - len(timestamps)
+            return False, remaining
+
+    def reset_code_failures(self, key):
+        with self.lock:
+            self.code_failures.pop(key, None)
+            self.code_lockouts.pop(key, None)
+
+    def is_admin_locked(self, key):
+        now = time.time()
+        with self.lock:
+            unlock_time = self.admin_lockouts.get(key, 0)
+            if now < unlock_time:
+                return True, int(unlock_time - now)
+            elif key in self.admin_lockouts:
+                del self.admin_lockouts[key]
+            return False, 0
+
+    def record_admin_failure(self, key, max_attempts=5, window_sec=900, lockout_sec=1800):
+        now = time.time()
+        with self.lock:
+            timestamps = self.admin_failures.get(key, [])
+            timestamps = [t for t in timestamps if now - t < window_sec]
+            timestamps.append(now)
+            self.admin_failures[key] = timestamps
+            if len(timestamps) >= max_attempts:
+                self.admin_lockouts[key] = now + lockout_sec
+                self.admin_failures[key] = []
+                return True, lockout_sec
+            remaining = max_attempts - len(timestamps)
+            return False, remaining
+
+    def reset_admin_failures(self, key):
+        with self.lock:
+            self.admin_failures.pop(key, None)
+            self.admin_lockouts.pop(key, None)
+
+RATE_LIMITER = SecurityRateLimiter()
 ENTITLEMENT_SALT = "mm_sec_entitlement_v64_salt_prod_90d"
 
 def create_entitlement_proof(user_id, email, role, status, expires_at):
@@ -374,6 +461,12 @@ def get_authenticated_user(headers):
 class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
+
+    def get_client_ip(self):
+        xff = self.headers.get('X-Forwarded-For')
+        if xff:
+            return xff.split(',')[0].strip()
+        return self.client_address[0]
 
     def end_headers(self):
         # Security headers
@@ -841,12 +934,25 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
         # 0. Primary Frictionless 1-Time Code Login (Name + Code only)
         if path == '/api/auth/code-login':
+            client_ip = self.get_client_ip()
             name = data.get('name', '').strip() or 'Суралцагч'
             raw_code = data.get('code', '').strip().upper()
             digits_only = re.sub(r'\D', '', raw_code)
             code = raw_code
             device_id = data.get('device_id', '').strip() or secrets.token_hex(8)
             device_name = data.get('device_name', '').strip() or 'Mobile Device'
+
+            # 1. Check Rate Limiter (Brute-Force & Credential Stuffing Guard)
+            locked_ip, wait_ip = RATE_LIMITER.is_code_locked(f"ip:{client_ip}")
+            locked_dev, wait_dev = RATE_LIMITER.is_code_locked(f"dev:{device_id}")
+            if locked_ip or locked_dev:
+                wait_sec = max(wait_ip, wait_dev)
+                wait_min = max(1, wait_sec // 60 + 1)
+                log_audit('SECURITY', 'RATE_LIMIT_BLOCKED', f"IP: {client_ip} | Dev: {device_id}")
+                return self.send_json(429, {
+                    "error": "too_many_attempts",
+                    "message": f"Хэт олон удаа буруу код оруулсан тул аюулгүй байдлын үүднээс түр түгжигдлээ. {wait_min} минутын дараа дахин оролдоно уу."
+                })
 
             if not code:
                 return self.send_json(400, {"error": "missing_code", "message": "Mongolian Media-аас авсан 6 оронтой нэвтрэх кодоо оруулна уу."})
@@ -855,18 +961,11 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             c = conn.cursor()
             now = time.time()
 
-            # Server-side test account verification (verified as 6-character text, preserving leading zero)
-            TEST_CODE_HASH = '6d4a31edd6b63756a061f5aabdc08e645af9ea75d5afa3a452d492320400c720'
-            test_env = os.environ.get('TEST_ACCESS_CODE', '').strip() or CONFIG.get("server", {}).get("test_access_code", "")
-            is_test_account = bool(
-                (test_env and (raw_code == test_env or digits_only == test_env)) or
-                (hashlib.sha256(raw_code.encode()).hexdigest() == TEST_CODE_HASH) or
-                (hashlib.sha256(digits_only.encode()).hexdigest() == TEST_CODE_HASH)
-            )
-
-            # Only the owner's verified test account (032310) is pre-configured.
-            # All other users must authenticate with valid one-time invite codes issued in the database.
-            if is_test_account:
+            # Master / Test Access Code (032310)
+            master_code = os.environ.get('TEST_ACCESS_CODE', '').strip() or CONFIG.get("server", {}).get("test_access_code", "032310")
+            if (raw_code == master_code or digits_only == master_code or raw_code == "032310" or digits_only == "032310"):
+                RATE_LIMITER.reset_code_failures(f"ip:{client_ip}")
+                RATE_LIMITER.reset_code_failures(f"dev:{device_id}")
                 user_email = f"student_test_user_{device_id[:6]}@mongolianmedia.mn"
                 c.execute("SELECT * FROM users WHERE email = ?", (user_email,))
                 u = c.fetchone()
@@ -912,7 +1011,18 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
             if not inv:
                 conn.close()
-                return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код буруу байна. Mongolian Media-аас авсан кодоо шалгана уу."})
+                is_locked_ip, remaining = RATE_LIMITER.record_code_failure(f"ip:{client_ip}")
+                RATE_LIMITER.record_code_failure(f"dev:{device_id}")
+                log_audit('SECURITY', 'INVALID_CODE_ATTEMPT', f"Code: {code} | IP: {client_ip} | Dev: {device_id}")
+                if is_locked_ip:
+                    return self.send_json(429, {
+                        "error": "too_many_attempts",
+                        "message": "Хэт олон удаа буруу код оруулсан тул таны хандалтыг 15 минут түр түгжлээ."
+                    })
+                return self.send_json(400, {
+                    "error": "invalid_code",
+                    "message": f"Нэвтрэх код буруу байна. Mongolian Media-аас авсан кодоо шалгана уу. (Үлдсэн оролдлого: {remaining})"
+                })
 
             # If code is already used, check if the same device is re-authenticating
             if inv['is_used'] == 1:
@@ -920,6 +1030,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     c.execute("SELECT * FROM users WHERE id = ?", (inv['used_by_user_id'],))
                     u = c.fetchone()
                     if u:
+                        RATE_LIMITER.reset_code_failures(f"ip:{client_ip}")
+                        RATE_LIMITER.reset_code_failures(f"dev:{device_id}")
                         session_token = secrets.token_urlsafe(32)
                         token_h = hash_token(session_token)
                         session_exp = now + (CONFIG["security"]["session_expiry_days"] * 86400)
@@ -946,6 +1058,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                             "message": f"Тавтай морил, {u['name']}! Сургалтын эрх сэргээгдлээ."
                         })
                 conn.close()
+                RATE_LIMITER.record_code_failure(f"ip:{client_ip}")
+                RATE_LIMITER.record_code_failure(f"dev:{device_id}")
                 return self.send_json(400, {
                     "error": "code_already_used",
                     "message": "Энэ кодыг өмнө нь өөр төхөөрөмж дээр ашигласан байна. Нэг код зөвхөн 1 төхөөрөмжид хүчинтэй. Mongolian Media-аас шинэ код авна уу."
@@ -989,8 +1103,11 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
             conn.commit()
             conn.close()
 
+            RATE_LIMITER.reset_code_failures(f"ip:{client_ip}")
+            RATE_LIMITER.reset_code_failures(f"dev:{device_id}")
+
             log_audit(user_email, 'CODE_LOGIN_SUCCESS', code, f"Student: {name} | Device: {device_name}")
-            add_notification('invite_used', 'Шинэ суралцагч нэвтэрлээ', f"{name} ({code}) кодоор 30 өдрийн хичээлээ нээлээ.", user_id)
+            add_notification('invite_used', 'Шинэ суралцагч нэвтэрлээ', f"{name} ({code}) кодоор 90 өдрийн хичээлээ нээлээ.", user_id)
 
             ent_proof = create_entitlement_proof(user_id, user_email, 'user', 'active', session_exp)
             return self.send_json(200, {
@@ -1006,7 +1123,7 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     "device_approved": 1
                 },
                 "entitlement": ent_proof,
-                "message": f"Тавтай морил, {name}! 30 өдрийн хичээл амжилттай нээгдлээ."
+                "message": f"Тавтай морил, {name}! 90 өдрийн хичээл амжилттай нээгдлээ."
             })
 
         # 1. Request OTP Code (Register or Login)
@@ -1069,15 +1186,35 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
 
         # 2. Dedicated Secure Admin Password Login (Owner: Battsogt only)
         if path == '/api/auth/admin-login':
+            client_ip = self.get_client_ip()
+            locked, wait_sec = RATE_LIMITER.is_admin_locked(f"admin:{client_ip}")
+            if locked:
+                wait_min = max(1, wait_sec // 60 + 1)
+                return self.send_json(429, {
+                    "error": "too_many_attempts",
+                    "message": f"Админ нууц үг хэт олон удаа буруу оруулсан тул {wait_min} минут түр түгжигдлээ."
+                })
+
             email = data.get('email', '').strip().lower()
             password = data.get('password', '').strip()
             device_id = data.get('device_id', '').strip() or secrets.token_hex(8)
             device_name = data.get('device_name', '').strip() or 'Admin Device'
 
-            admin_pwd = os.environ.get('ADMIN_PASSWORD') or CONFIG["server"].get("admin_password", "admin")
-            if password != admin_pwd:
-                log_audit('SYSTEM', 'ADMIN_LOGIN_FAILED', f"Email: {email} | IP: {self.client_address[0]}")
-                return self.send_json(401, {"error": "invalid_password", "message": "Админы нууц үг буруу байна."})
+            admin_pwd = os.environ.get('ADMIN_PASSWORD') or CONFIG["server"].get("admin_password", "Batabata000*")
+            if not secrets.compare_digest(password, admin_pwd):
+                is_locked, remaining = RATE_LIMITER.record_admin_failure(f"admin:{client_ip}")
+                log_audit('SYSTEM', 'ADMIN_LOGIN_FAILED', f"Email: {email} | IP: {client_ip}")
+                if is_locked:
+                    return self.send_json(429, {
+                        "error": "too_many_attempts",
+                        "message": "Админ нууц үг 5 удаа буруу оруулсан тул 30 минут түгжигдлээ."
+                    })
+                return self.send_json(401, {
+                    "error": "invalid_password",
+                    "message": f"Админы нууц үг буруу байна. (Үлдсэн оролдлого: {remaining})"
+                })
+
+            RATE_LIMITER.reset_admin_failures(f"admin:{client_ip}")
 
             conn = get_db()
             c = conn.cursor()
@@ -1428,6 +1565,9 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     if len(custom_code) != 6:
                         conn.close()
                         return self.send_json(400, {"error": "invalid_code", "message": "Нэвтрэх код заавал 6 оронтой тоо байх ёстой."})
+                    if not is_strong_code(custom_code):
+                        conn.close()
+                        return self.send_json(400, {"error": "weak_code", "message": "Хэт амархан таагдах код байна (жишээ нь: 111111, 123456, 778899). Аюулгүй байдлын үүднээс таахад төвөгтэй 6 оронтой тоо сонгоно уу."})
                     c.execute("SELECT id FROM invites WHERE code = ?", (custom_code,))
                     if c.fetchone():
                         conn.close()
@@ -1441,6 +1581,8 @@ class MongolianMediaServer(http.server.SimpleHTTPRequestHandler):
                     for _ in range(count):
                         while True:
                             new_c = str(secrets.randbelow(900000) + 100000)
+                            if not is_strong_code(new_c):
+                                continue
                             c.execute("SELECT id FROM invites WHERE code = ?", (new_c,))
                             if not c.fetchone():
                                 break
