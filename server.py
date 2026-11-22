@@ -1500,6 +1500,29 @@ def run_server(host=None, port=None):
         except Exception as e:
             print(f"[*] Порт 80 нээгдсэнгүй (Үндсэн порт {port} ажиллана): {e}")
 
+    
+    # ---------------------------------------------------------
+    # Render Keep-Alive Worker (prevents inactivity spin-down)
+    # ---------------------------------------------------------
+    def keep_alive_ping():
+        app_url = os.environ.get('RENDER_EXTERNAL_URL') or os.environ.get('APP_URL') or 'https://korean-app-ny1w.onrender.com/'
+        time.sleep(30)
+        while True:
+            try:
+                req = urllib.request.Request(
+                    app_url,
+                    headers={'User-Agent': 'MongolianMedia-KeepAlive/1.0'}
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    pass
+            except Exception:
+                pass
+            # Ping every 8 minutes (Render free tier sleeps after 15 min inactivity)
+            time.sleep(480)
+
+    t_alive = threading.Thread(target=keep_alive_ping, daemon=True)
+    t_alive.start()
+
     with socketserver.TCPServer((host, port), MongolianMediaServer) as httpd:
         print("=" * 65)
         print(f"  {CONFIG['server']['app_name']} — {CONFIG['server']['app_title']}")
